@@ -1,0 +1,4 @@
+event_id,event_name,event_date,event_city,event_state,event_country
+event2,Event 2: Second,2020-08-01,Paris,NULL,France
+event1,Event 1: First,2020-06-01,Barcelona,Catalonia,Spain
+event3,Event 3: Third,2020-09-02,Las Vegas,Nevada,USA

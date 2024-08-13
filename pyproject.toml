@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["ufcscraper",]
+
+[tool.setuptools.dynamic]
+version = {attr = "ufcscraper.__version__"}
+dependencies = {file = ["requirements.txt"]}
+
+[project]
+name = "ufcscraper"
+readme = "README.md"
+requires-python = ">=3.9.13"
+dynamic = ["version"]
+
+[project.scripts]
+ufcscraper_scrape_ufcstats_data = "ufcscraper.scripts.scrape_ufcstats_data:main"
+ufcscraper_scrape_bestfightodds_data = "ufcscraper.scripts.scrape_bestfightodds_data:main"
