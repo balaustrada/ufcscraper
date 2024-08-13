@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["ufcscraper",]
+packages = ["ufcscraper","ufcscraper.scripts"]
 
 [tool.setuptools.dynamic]
 version = {attr = "ufcscraper.__version__"}
@@ -14,6 +14,15 @@ name = "ufcscraper"
 readme = "README.md"
 requires-python = ">=3.9.13"
 dynamic = ["version"]
+dependencies = [
+    "beautifulsoup4",
+    "fuzzywuzzy",
+    "pandas",
+    "python_dateutil",
+    "Requests",
+    "selenium",
+    "urllib3",
+]
 
 [project.scripts]
 ufcscraper_scrape_ufcstats_data = "ufcscraper.scripts.scrape_ufcstats_data:main"

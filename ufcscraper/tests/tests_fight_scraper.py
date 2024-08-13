@@ -84,7 +84,7 @@ class TestFightScraper(unittest.TestCase):
         side_effect=mock_url_from_id_event,
     )
     @patch.object(requests.Session, "get", side_effect=mock_event_get)
-    def test_get_fight_urls(self, mock_get, mock_url_from_id) -> None:
+    def test_get_fight_urls(self, mock_get: Mock, mock_url_from_id: Mock) -> None:
         urls = self.scraper.get_fight_urls(get_all_events=True)
 
         self.assertEqual(
@@ -107,7 +107,7 @@ class TestFightScraper(unittest.TestCase):
     )
     @patch.object(requests.Session, "get", side_effect=mock_get)
     def test_scrape_events(
-        self, mock_get: Mock, mock_url_from_id, mock_url_from_id_2
+        self, mock_get: Mock, mock_url_from_id: Mock, mock_url_from_id_2: Mock
     ) -> None:
         with self.assertLogs("ufcscraper.fight_scraper", level="ERROR") as cm:
             self.scraper.scrape_fights()
@@ -143,7 +143,7 @@ class TestFightScraper(unittest.TestCase):
     )
     @patch.object(requests.Session, "get", side_effect=mock_get)
     def test_scrape_events_partial(
-        self, mock_get: Mock, mock_url_from_id, mock_url_from_id_2
+        self, mock_get: Mock, mock_url_from_id: Mock, mock_url_from_id_2: Mock
     ) -> None:
         self.scraper.scrape_fights(get_all_events=False)
 

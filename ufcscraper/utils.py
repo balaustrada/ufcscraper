@@ -14,7 +14,7 @@ from urllib3.util import Retry
 
 if TYPE_CHECKING:
     import datetime
-    from typing import Callable, Generator, List, Optional, Tuple, TypeVar
+    from typing import Callable, Generator, List, Optional, Tuple, TypeVar, Any
     from selenium import webdriver
     from selenium.webdriver.remote.webelement import WebElement
 

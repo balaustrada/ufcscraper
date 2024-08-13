@@ -21,7 +21,7 @@ from ufcscraper.base import BaseScraper
 from ufcscraper.ufc_scraper import UFCScraper
 from ufcscraper.utils import element_present_in_list, parse_date
 
-if TYPE_CHECKING:
+if TYPE_CHECKING: # pragma: no cover
     import datetime
     from typing import Any, Callable, List, Optional, Set, Tuple
 
@@ -73,7 +73,8 @@ class BestFightOddsScraper(BaseScraper):
 
         return search_url
 
-    def captcha_indicator(self, driver: webdriver.Chrome) -> bool:
+    @staticmethod
+    def captcha_indicator(driver: webdriver.Chrome) -> bool: # pragma: no cover
         """
         Check if there is a captcha
 
@@ -264,13 +265,21 @@ class BestFightOddsScraper(BaseScraper):
         List[int | None],
     ]:
         # Wait for profile table to be there
-        table = WebDriverWait(driver, 60).until(
-            EC.presence_of_all_elements_located((By.CLASS_NAME, "team-stats-table"))
-        )
+        element = WebDriverWait(driver, 60).until(
+            element_present_in_list(
+                (By.CLASS_NAME, "team-stats-table"),
+                (By.ID, "hfmr8")
+            )
+        )[0] # type: ignore[index]
+
+        if element.get_attribute("id") == "hfmr8": # pragma: no cover
+            while BestFightOddsScraper.captcha_indicator(driver):
+                logging.warning("Human recognition page detected, stalling...")
+                time.sleep(5)
 
         # Extract table
         soup = BeautifulSoup(
-            table[0].get_attribute("innerHTML"),
+            element.get_attribute("innerHTML"),
             "html.parser",
         )
 
@@ -368,7 +377,7 @@ class BestFightOddsScraper(BaseScraper):
             )
         )[0] # type: ignore[index]
 
-        if element.get_attribute("id") == "hfmr8":
+        if element.get_attribute("id") == "hfmr8": # pargma: no cover
             while self.captcha_indicator(driver):
                 logging.warning("Human recognition page detected, stalling..")
                 time.sleep(5)
@@ -609,7 +618,6 @@ class BestFightOddsScraper(BaseScraper):
         result_queue, task_queue, workers = self.get_parallel_odds_from_profile_urls(
             ids, search_names, bfo_ids,
         )
-
         with (
             open(self.data_file, "a") as f_odds,
             open(self.fighter_names.data_file, "a") as f_names,
@@ -666,7 +674,16 @@ class BestFightOddsScraper(BaseScraper):
                             ]
 
                             best_name, score = max(scores, key=lambda x: x[1])
-                            best_index = opponents_BFO_names.index(best_name)
+                            
+                            # Iterate to find the position of the match
+                            # date and name
+                            for best_index, (date_, name_) in enumerate(zip(dates, opponents_BFO_names)):
+                                if date == date_ and name_ == best_name:
+                                    break
+                            else:
+                                # Unable to find, let's set the score to 0
+                                # and nothing will be added
+                                score = 0
 
                             if score > self.min_score:
                                 writer_odds.writerow(
@@ -726,7 +743,7 @@ class BestFightOddsScraper(BaseScraper):
                     logger.info(
                         f"{fighters_scraped} out of {fighters_to_scrape} fighters - Error"
                     )
-
+        
         for _ in range(self.n_sessions):
             task_queue.put(None)
 

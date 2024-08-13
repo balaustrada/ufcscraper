@@ -1,0 +1,13 @@
+fight_id,fighter_id,opening,closing_range_min,closing_range_max
+fight1,fighter1,1,2,3
+fight1,fighter2,4,5,6
+fight2,fighter3,7,8,9
+fight2,fighter4,1,2,3
+fight3,fighter5,4,5,6
+fight3,fighter6,7,8,9
+fight4,fighter1,4,5,6
+fight4,fighter2,6,5,8
+fight5,fighter3,8,0,9
+fight5,fighter4,5,5,2
+fight6,fighter5,1,3,2
+fight6,fighter6,8,5,2

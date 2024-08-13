@@ -1,0 +1,23 @@
+fighter_id,database,name,database_id
+fighter3,UFCStats,Max Power,fighter3
+fighter2,UFCStats,Jane Smith,fighter2
+fighter2,UFCStats,Jane Smith,fighter2
+fighter4,UFCStats,Emily Brown,fighter4
+fighter6,UFCStats,Sophia Wilson,fighter6
+fighter6,UFCStats,Sophia Wilson,fighter6
+fighter4,UFCStats,Emily Brown,fighter4
+fighter1,UFCStats,John Doe,fighter1
+fighter1,UFCStats,John Doe,fighter1
+fighter3,UFCStats,Max Power,fighter3
+fighter5,UFCStats,Liam Jones,fighter5
+fighter5,UFCStats,Liam Jones,fighter5
+fighter1,BestFightOdds,John Doe,fighter1
+fighter2,BestFightOdds,Jane Smith,fighter2
+fighter4,BestFightOdds,Emily Brown,fighter4
+fighter3,BestFightOdds,Max Power,fighter3
+fighter1,BestFightOdds,John Doe,fighter1
+fighter2,BestFightOdds,Jane Smith,fighter2
+fighter5,BestFightOdds,Liam Jones,fighter5
+fighter6,BestFightOdds,Sophia Wilson,fighter6
+fighter5,BestFightOdds,Liam Jones,fighter5
+fighter6,BestFightOdds,Sophia Wilson,fighter6

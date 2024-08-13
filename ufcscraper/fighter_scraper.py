@@ -19,7 +19,6 @@ if TYPE_CHECKING: # pragma: no cover
     from typing import List
 
 logger = logging.getLogger(__name__)
-print(__name__)
 
 class FighterScraper(BaseScraper):
     columns: List[str] = [
