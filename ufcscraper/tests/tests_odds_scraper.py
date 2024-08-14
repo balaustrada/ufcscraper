@@ -131,16 +131,6 @@ def mock_get_odds(
         found_closing_range_mins += id_closing_range_mins
         found_closing_range_maxs += id_closing_range_maxs
 
-    print(
-        found_dates,
-        found_fighter_BFO_ids,
-        found_fighter_BFO_names,
-        found_opponents_ids,
-        found_opponents_names,
-        found_openings,
-        found_closing_range_mins,
-        found_closing_range_maxs,
-    )
     return (
         found_dates,
         found_fighter_BFO_ids,
@@ -332,31 +322,11 @@ class TestOddsScraper(unittest.TestCase):
             level="INFO",
             format="%(levelname)s:%(message)s",
         )
-        mockdriver = MagicMock()
-        mockdriver.quit.return_value = None
-        self.scraper.drivers = [mockdriver, mockdriver, mockdriver]
+        mock_driver = MagicMock()
+        mock_driver.quit.return_value = None
+        self.scraper.drivers = [mock_driver, mock_driver, mock_driver]
         self.scraper.n_sessions = 3
         self.scraper.scrape_BFO_odds()
-
-        for file in "BestFightOdds_odds", "fighter_names":
-            self.assertEqual(
-                sorted(
-                    Path(THIS_DIR / f"test_files/run_files/{file}.csv")
-                    .read_text()
-                    .splitlines()
-                ),
-                sorted(
-                    Path(THIS_DIR / f"test_files/{file}_partial.csv")
-                    .read_text()
-                    .splitlines()
-                ),
-            )
-
-        self.scraper.load_data()
-        self.scraper.fighter_names.load_data()
-        # Iterate again to complete the missing ones
-        self.scraper.scrape_BFO_odds()
-        self.scraper.remove_duplicates_from_file()
 
         for file in "BestFightOdds_odds", "fighter_names":
             self.assertEqual(

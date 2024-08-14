@@ -570,6 +570,86 @@ class BestFightOddsScraper(BaseScraper):
                 ]
             )
         )
+    
+    def extract_valid_fights_from_odds_data(self, 
+        fighter_missing_data: pd.DataFrame,
+        odds_data: Tuple,  
+    ):
+        dates, fighter_BFO_ids, fighter_BFO_names, opponents_BFO_ids, opponents_BFO_names, openings, closing_range_mins, closing_range_maxs = odds_data
+
+        BFO_names = set()
+        odds_records = []
+        for _, row in fighter_missing_data.iterrows():
+            date = row["event_date"].date()
+
+            candidates_indxs = [
+                i
+                for i, candidate_date in enumerate(dates)
+                if abs((candidate_date - date).days) <= 1.5
+            ]
+
+            if len(candidates_indxs) == 0:
+                logger.info(
+                    f"Unable to find opponent {row["opponent_UFC_names"][0]} for "
+                    f"{row['UFC_names'][0]} on {date}"
+                )
+            else:
+                possible_opponents = [
+                    opponents_BFO_names[i] for i in candidates_indxs
+                ]
+
+                scores = [
+                    process.extractOne(
+                        opponent,
+                        possible_opponents,
+                        scorer=fuzz.token_sort_ratio,
+                    )
+                    for opponent in possible_opponents
+                ]
+
+                best_name, score = max(scores, key=lambda x: x[1])
+                
+                # Iterate to find the position of the match
+                # date and name
+                for best_index, (date_, name_) in enumerate(zip(dates, opponents_BFO_names)):
+                    if (abs((date - date_).days) <= 1.5) and name_ == best_name:
+                        break
+                else:
+                    # Unable to find, let's set the score to 0
+                    # and nothing will be added
+                    score = 0
+
+                if score > self.min_score:
+                    odds_records.append(
+                        [
+                            row["fight_id"],
+                            row["fighter_id"],
+                            openings[best_index],
+                            closing_range_mins[best_index],
+                            closing_range_maxs[best_index],
+                        ]
+                    )
+                    BFO_names.add(
+                        (
+                            row["opponent_id"],
+                            opponents_BFO_ids[best_index],
+                            opponents_BFO_names[best_index],
+                        )
+                    )
+                    BFO_names.add(
+                        (
+                            row["fighter_id"],
+                            fighter_BFO_ids[best_index],
+                            fighter_BFO_names[best_index],
+                        )
+                    )
+                else:
+                    logger.info(
+                        f"Unable to find opponent {row["opponent_UFC_names"][0]} for "
+                        f"{row['UFC_names'][0]} on {date}."
+                    )
+        
+        return odds_records, BFO_names
         
 
     def scrape_BFO_odds(self) -> None:
@@ -633,116 +713,31 @@ class BestFightOddsScraper(BaseScraper):
                 fighters_scraped += 1
 
                 if result is not None:
-                    (
-                        dates,
-                        fighter_BFO_ids,
-                        fighter_BFO_names,
-                        opponents_BFO_ids,
-                        opponents_BFO_names,
-                        openings,
-                        closing_range_mins,
-                        closing_range_maxs,
-                    ) = result
+                    odds_records, BFO_names = self.extract_valid_fights_from_odds_data(
+                        grouped_data.get_group(fighter_id),
+                        result,
+                    )
 
-                    group = grouped_data.get_group(fighter_id)
-                    new_BFO_names = set()
+                    # Write records
+                    [writer_odds.writerow(record) for record in odds_records]
+                    records_added += len(odds_records)
 
-                    fighter_records = 0
-                    for _, row in group.iterrows():
-                        date = row["event_date"].date()
-
-                        candidates_indxs = [
-                            i
-                            for i, candidate_date in enumerate(dates)
-                            if abs((candidate_date - date).days) <= 1.5
-                        ]
-
-                        if len(candidates_indxs) == 0:
-                            logger.info(
-                                f"Unable to find opponent {row["opponent_UFC_names"][0]} for "
-                                f"{row['UFC_names'][0]} on {date}"
-                            )
-                        else:
-                            possible_opponents = [
-                                opponents_BFO_names[i] for i in candidates_indxs
-                            ]
-
-                            scores = [
-                                process.extractOne(
-                                    opponent,
-                                    possible_opponents,
-                                    scorer=fuzz.token_sort_ratio,
-                                )
-                                for opponent in possible_opponents
-                            ]
-
-                            best_name, score = max(scores, key=lambda x: x[1])
-                            
-                            # Iterate to find the position of the match
-                            # date and name
-                            for best_index, (date_, name_) in enumerate(zip(dates, opponents_BFO_names)):
-                                if (abs((date - date_).days) <= 1.5) and name_ == best_name:
-                                    break
-                            else:
-                                # Unable to find, let's set the score to 0
-                                # and nothing will be added
-                                score = 0
-
-                            if score > self.min_score:
-                                writer_odds.writerow(
-                                    [
-                                        row["fight_id"],
-                                        row["fighter_id"],
-                                        openings[best_index],
-                                        closing_range_mins[best_index],
-                                        closing_range_maxs[best_index],
-                                    ]
-                                )
-                                fighter_records += 1
-
-                                # We add the names as valid to be added if they are not in the database yet
-                                new_BFO_names.add(
-                                    (
-                                        row["opponent_id"],
-                                        opponents_BFO_ids[best_index],
-                                        opponents_BFO_names[best_index],
-                                    )
-                                )
-                                new_BFO_names.add(
-                                    (
-                                        row["fighter_id"],
-                                        fighter_BFO_ids[best_index],
-                                        fighter_BFO_names[best_index],
-                                    )
-                                )
-                            else:
-                                logger.info(
-                                    f"Unable to find opponent {opponents_BFO_names} for "
-                                    f"{row['UFC_names'][0]} on {date}"
-                                )
-
-                    records_added += fighter_records
                     logger.info(
                         f"{fighters_scraped} out of {fighters_to_scrape} fighters."
                         f"\n\t{records_added} out of {records_to_add} records added."
                     )
 
-                    # Check if the valid names are already in the database and if not, add them
-                    for id_, bfo_id, name in new_BFO_names:
-                        in_database = bool(
-                            (
-                                (self.fighter_names.data["fighter_id"] == id_)
-                                & (
-                                    self.fighter_names.data["database"]
-                                    == "BestFightOdds"
-                                )
-                                & (self.fighter_names.data["database_id"] == bfo_id)
-                                & (self.fighter_names.data["name"] == name)
-                            ).any()
-                        )
-
-                        if not in_database:
+                    # Check if the valid names are already in the names table
+                    # and if not, add them
+                    for id_, bfo_id, name in BFO_names:
+                        if not self.fighter_names.fighter_in_database(
+                            id_,
+                            "BestFightOdds",
+                            name,
+                            bfo_id,
+                        ):
                             writer_names.writerow([id_, "BestFightOdds", name, bfo_id])
+
                 else:
                     logger.info(
                         f"{fighters_scraped} out of {fighters_to_scrape} fighters - Error"
@@ -753,6 +748,19 @@ class BestFightOddsScraper(BaseScraper):
 
         for worker in workers:
             worker.join()
+
+        logger.info("Finished scraping BFO odds.")
+        logger.info("Scraped {} records".format(records_added))
+
+        if records_added != 0:
+            logger.info("Rerunning scraping to fill in missing records...")
+            self.load_data()
+            self.fighter_names.load_data()
+            self.scrape_BFO_odds()
+        else:
+            logger.info("0 records scraped, unable to add more by rerunning scraping.")
+
+
 
 
 class FighterNames(BaseScraper):
@@ -791,6 +799,16 @@ class FighterNames(BaseScraper):
             print()
             logger.info("Reloading data after adding missing records")
             self.load_data()
+
+    def fighter_in_database(self, fighter_id: str, database: str, name: str, database_id: str) -> bool:
+        return bool(
+            (
+                (self.data["fighter_id"] == fighter_id)
+                & (self.data["database"] == database)
+                & (self.data["name"] == name)
+                & (self.data["database_id"] == database_id)
+            ).any()
+        )
 
     def get_ufcstats_data(self) -> pd.DataFrame:
         logger.info("Loading UFCStats data...")
