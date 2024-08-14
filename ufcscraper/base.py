@@ -4,6 +4,7 @@ import csv
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+from abc import ABC, abstractmethod
 
 import pandas as pd
 
@@ -14,11 +15,11 @@ if TYPE_CHECKING: # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class BaseScraper:
+class BaseScraper(ABC):
     web_url: str = "http://www.ufcstats.com"
     columns: List[str]
     data_folder: Path
-    n_sessions: int = 8  # These are defaults
+    n_sessions: int = 1  # These are defaults
     delay: float = 0.1
     filename: str
     data = pd.DataFrame([])
@@ -66,3 +67,8 @@ class BaseScraper:
             return BaseScraper.id_from_url(url[:-1])
 
         return url.split("/")[-1]
+
+    @staticmethod
+    @abstractmethod
+    def url_from_id(id: str) -> str:
+        pass

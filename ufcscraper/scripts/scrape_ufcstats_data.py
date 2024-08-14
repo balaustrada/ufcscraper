@@ -61,7 +61,7 @@ def get_args() -> argparse.Namespace:
         "--data-folder", type=Path, help="Folder where scraped data will be stored."
     )
 
-    parser.add_argument("--n-sessions", type=int, default=8, help="Number of sessions.")
+    parser.add_argument("--n-sessions", type=int, default=1, help="Number of sessions.")
 
     parser.add_argument("--delay", type=int, default=0, help="Delay between requests.")
 
