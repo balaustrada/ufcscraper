@@ -1,8 +1,8 @@
 """ Base modules for ufc scraper
 
-This module defines BaseFileHandler and BaseScraper classes
-they are meant to be inherited by specific scraper or 
-file handler modules.
+This module defines BaseFileHandler and BaseScraper classes,
+meant to be inherited by specific scraper or file handler 
+modules.
 """
 from __future__ import annotations
 
@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseFileHandler(ABC):
-    """
-    Base class for file handlers associated with a CSV table.
+    """Base class for file handlers associated with a CSV table.
 
     This class provides the basic functionality to manage data stored in a CSV
     file. It handles checking the existence of the file, initializing it with 
@@ -31,11 +30,11 @@ class BaseFileHandler(ABC):
     pandas DataFrame.
 
     Attributes:
-    columns : The column names to be used in the CSV file. This should be 
-        defined in subclasses.
-    data_folder : The folder where the CSV file is stored.
-    filename : The name of the CSV file. This should be defined in subclasses.
-    data : A pandas DataFrame that holds the data loaded from the CSV file.
+        columns: The column names to be used in the CSV file. This should be 
+            defined in subclasses.
+        data_folder: The folder where the CSV file is stored.
+        filename: The name of the CSV file. This should be defined in subclasses.
+        data: A pandas DataFrame that holds the data loaded from the CSV file.
     """
     columns: List[str]
     data_folder: Path

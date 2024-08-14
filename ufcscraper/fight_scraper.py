@@ -30,11 +30,6 @@ class FightScraper(BaseScraper):
     fight statistics including fighters, referees, results, and more. It
     saves the scraped data into two CSV files: one for fights and one for
     rounds (through the companion class `RoundsHandler`).
-
-    Attributes:
-        columns: The column names for the CSV file.
-        data: A pandas DataFrame initialized with the column names.
-        filename: The name of the CSV file where fight data is stored.
     """
 
     columns: List[str] = [
@@ -386,11 +381,6 @@ class RoundsHandler(BaseFileHandler):
     This class inherits from `BaseFileHandler` and manages round-specific
     statistics, including strikes, takedowns, and control time. It formats
     and saves the data to a CSV file.
-
-    Attributes:
-        columns: The column names for the CSV file.
-        data: A pandas DataFrame initialized with the column names.
-        filename: The name of the CSV file where round data is stored.
     """
     columns: List[str] = [
         "fight_id",

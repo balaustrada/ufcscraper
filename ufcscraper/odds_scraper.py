@@ -36,15 +36,10 @@ class BestFightOddsScraper(BaseScraper):
     the scraping process and handles captcha detection (not solving).
 
     Attributes:
-        columns: List of column names for the DataFrame.
-        data: DataFrame to store scraped odds data.
-        filename: Name of the CSV file to save odds data.
-        n_sessions: Number of concurrent browser sessions.
         min_score: Minimum score for matching fighter names.
         max_exception_retries: Maximum number of retries for failed 
             requests.
         wait_time: Time to wait for elements to load.
-        web_url: Base URL for Best Fight Odds website.
     """
     columns: List[str] = [
         "fight_id",
@@ -923,11 +918,6 @@ class FighterNames(BaseFileHandler):
     This class is responsible for loading and checking records of fighters 
     from various data sources. It manages the storage of fighter information, 
     including IDs, names, and database identifiers. 
-
-    Attributes:
-        columns (List[str]): List of column names used in the DataFrame.
-        data (pd.DataFrame): DataFrame to store fighter names and related information.
-        filename (str): Name of the file where fighter names are stored.
     """
     columns: List[str] = [
         "fighter_id",

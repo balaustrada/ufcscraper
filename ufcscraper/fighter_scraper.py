@@ -27,11 +27,6 @@ class FighterScraper(BaseScraper):
     This class handles scraping fighter details from UFCStats, including
     personal information, physical attributes, and fight records. The data
     is saved to a CSV file for further analysis.
-
-    Attributes:
-        columns: List of column names for the CSV file.
-        data: A pandas DataFrame initialized with the column names.
-        filename: The name of the CSV file where fighter data is stored.
     """
     columns: List[str] = [
         "fighter_id",

@@ -26,11 +26,6 @@ class EventScraper(BaseScraper):
     This class handles scraping event details such as event name, date, city,
     state, and country, and stores them in a CSV file. It inherits basic
     scraping functionality from `BaseScraper`.
-
-    Attributes:
-        columns: The column names for the CSV file.
-        data: A pandas DataFrame initialized with the column names.
-        filename: The name of the CSV file where event data is stored.
     """
 
     columns: List[str] = [
