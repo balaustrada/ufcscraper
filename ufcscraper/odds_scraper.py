@@ -574,11 +574,11 @@ class BestFightOddsScraper(BaseScraper):
     def extract_valid_fights_from_odds_data(self, 
         fighter_missing_data: pd.DataFrame,
         odds_data: Tuple,  
-    ):
+    ) -> Tuple[List[List[str]], Set[Tuple[str, str, str]]]:
         dates, fighter_BFO_ids, fighter_BFO_names, opponents_BFO_ids, opponents_BFO_names, openings, closing_range_mins, closing_range_maxs = odds_data
 
-        BFO_names = set()
-        odds_records = []
+        BFO_names: Set[Tuple[str, str, str]] = set()
+        odds_records: List[List[str]] = []
         for _, row in fighter_missing_data.iterrows():
             date = row["event_date"].date()
 
