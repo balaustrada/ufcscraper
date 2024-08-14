@@ -68,7 +68,7 @@ class BaseScraper(ABC):
 
         return url.split("/")[-1]
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def url_from_id(id: str) -> str:
+    def url_from_id(cls, id: str) -> str:
         pass
