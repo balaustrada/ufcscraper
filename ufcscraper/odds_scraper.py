@@ -17,7 +17,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from ufcscraper.base import BaseScraper
+from ufcscraper.base import BaseScraper, BaseFileHandler
 from ufcscraper.ufc_scraper import UFCScraper
 from ufcscraper.utils import element_present_in_list, parse_date
 
@@ -763,7 +763,7 @@ class BestFightOddsScraper(BaseScraper):
 
 
 
-class FighterNames(BaseScraper):
+class FighterNames(BaseFileHandler):
     columns: List[str] = [
         "fighter_id",
         "database",

@@ -14,31 +14,19 @@ if TYPE_CHECKING: # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-
-class BaseScraper(ABC):
-    web_url: str = "http://www.ufcstats.com"
+class BaseFileHandler(ABC):
     columns: List[str]
     data_folder: Path
-    n_sessions: int = 1  # These are defaults
-    delay: float = 0.1
     filename: str
+
     data = pd.DataFrame([])
 
     def __init__(
         self,
         data_folder: Path | str,
-        n_sessions: Optional[int] = None,
-        delay: Optional[float] = None,
     ):
-        """
-        filename: name of the csv file
-        n_sessions: number of concurrent sessions
-        delay: delay between requests to avoid being blocked
-        """
         self.data_folder = Path(data_folder)
         self.data_file: Path = Path(self.data_folder) / self.filename
-        self.n_sessions = n_sessions or self.n_sessions
-        self.delay = delay or self.delay
 
         self.check_data_file()
         self.remove_duplicates_from_file()
@@ -61,14 +49,31 @@ class BaseScraper(ABC):
     def load_data(self) -> None:
         self.data = pd.read_csv(self.data_file).drop_duplicates()
 
+
+class BaseScraper(BaseFileHandler):
+    web_url: str = "http://www.ufcstats.com"
+    n_sessions: int = 1  # These are defaults
+    delay: float = 0.1
+
+    def __init__(
+        self,
+        data_folder: Path | str,
+        n_sessions: Optional[int] = None,
+        delay: Optional[float] = None,
+    ):
+        """
+        filename: name of the csv file
+        n_sessions: number of concurrent sessions
+        delay: delay between requests to avoid being blocked
+        """
+        super().__init__(data_folder)
+        self.n_sessions = n_sessions or self.n_sessions
+        self.delay = delay or self.delay
+
+
     @staticmethod
     def id_from_url(url: str) -> str:
         if url[-1] == "/":
             return BaseScraper.id_from_url(url[:-1])
 
         return url.split("/")[-1]
-
-    # @classmethod
-    # #@abstractmethod
-    # def url_from_id(cls, id: str) -> str:
-    #     pass

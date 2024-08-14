@@ -209,9 +209,9 @@ class TestFightScraper(unittest.TestCase):
 
         self.assertEqual(
             ("NULL",)*22,
-            RoundsScraper.get_stats(fight_stats_select, 0, 0, 0),
+            RoundsHandler.get_stats(fight_stats_select, 0, 0, 0),
         )
 
         with self.assertRaises(ValueError):
-            RoundsScraper.get_stats(fight_stats_select, 2, 0, 2)
+            RoundsHandler.get_stats(fight_stats_select, 2, 0, 2)
 

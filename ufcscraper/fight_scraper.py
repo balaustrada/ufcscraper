@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from ufcscraper.base import BaseScraper
+from ufcscraper.base import BaseScraper, BaseFileHandler
 from ufcscraper.event_scraper import EventScraper
 from ufcscraper.fighter_scraper import FighterScraper
 from ufcscraper.utils import links_to_soups
@@ -47,7 +47,7 @@ class FightScraper(BaseScraper):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-        self.rounds_scraper = RoundsScraper(*args, **kwargs)
+        self.rounds_handler = RoundsHandler(self.data_folder)
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
@@ -59,13 +59,13 @@ class FightScraper(BaseScraper):
         urls_to_scrape = set(ufcstats_fight_urls) - existing_urls
 
         logger.info(f"Opening round information to scrape stats")
-        rounds_scraper = RoundsScraper(self.data_folder, self.n_sessions, self.delay)
+        rounds_handler = RoundsHandler(self.data_folder)
 
         logger.info(f"Scraping {len(urls_to_scrape)} fights...")
 
         with (
             open(self.data_file, "a") as f_fights,
-            open(rounds_scraper.data_file, "a+") as f_rounds,
+            open(rounds_handler.data_file, "a+") as f_rounds,
         ):
             writer_fights = csv.writer(f_fights)
             writer_rounds = csv.writer(f_rounds)
@@ -108,7 +108,7 @@ class FightScraper(BaseScraper):
                     fight_stats_select = soup.select("p.b-fight-details__table-text")
                     for j, fighter_id in enumerate((fighter_1, fighter_2)):
                         for round_ in range(1, finish_round + 1):
-                            stats = rounds_scraper.get_stats(
+                            stats = rounds_handler.get_stats(
                                 fight_stats_select,
                                 fighter=j,
                                 round_=round_,
@@ -281,7 +281,7 @@ class FightScraper(BaseScraper):
             )
 
 
-class RoundsScraper(BaseScraper):
+class RoundsHandler(BaseFileHandler):
     columns: List[str] = [
         "fight_id",
         "fighter_id",
