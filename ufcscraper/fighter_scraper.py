@@ -22,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 
 class FighterScraper(BaseScraper):
+    """ Scrapes and stores fighter data from UFCStats.
+
+    This class handles scraping fighter details from UFCStats, including
+    personal information, physical attributes, and fight records. The data
+    is saved to a CSV file for further analysis.
+
+    Attributes:
+        columns: List of column names for the CSV file.
+        data: A pandas DataFrame initialized with the column names.
+        filename: The name of the CSV file where fighter data is stored.
+    """
     columns: List[str] = [
         "fighter_id",
         "fighter_f_name",
@@ -42,9 +53,22 @@ class FighterScraper(BaseScraper):
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
+        """Constructs the URL for a fighter's details page based on their ID.
+
+        Args:
+            id_: The fighter's unique identifier.
+
+        Returns:
+            The URL for the fighter's details page.
+        """
         return f"{cls.web_url}/fighter-details/{id_}"
 
     def scrape_fighters(self) -> None:
+        """Scrapes fighter details from URLs and saves the data to a CSV file.
+
+        This method retrieves fighter URLs, scrapes details from each URL, 
+        and appends the data to the CSV file. Handles errors and logs progress.
+        """
         existing_urls = set(map(self.url_from_id, self.data["fighter_id"]))
         ufcstats_fighter_urls = self.get_fighter_urls()
         urls_to_scrape = set(ufcstats_fighter_urls) - existing_urls
@@ -107,7 +131,10 @@ class FighterScraper(BaseScraper):
 
     def add_name_column(self) -> None:
         """
-        Add to data name column as in UFCStats.
+        Adds a combined name column to the DataFrame.
+
+        The new column is created by concatenating the fighter's first
+            and last names.
         """
         self.data["fighter_name"] = (
             self.data["fighter_f_name"] + " " + self.data["fighter_l_name"].fillna("")
@@ -115,13 +142,14 @@ class FighterScraper(BaseScraper):
 
     def get_fighter_urls(self) -> List[str]:
         """
-        Get the urls of the fighters.
+        Retrieves the URLs for fighter profiles.
 
-        :return: The urls of the fighters.
+        Returns:
+            A list of URLs to fighter profiles.
         """
         logger.info("Scraping fighter links...")
 
-        # We search fighters by letter
+        # Search fighters by letter
         urls = [
             f"{self.web_url}/statistics/fighters?char={letter}&page=all"
             for letter in "abcdefghijklmnopqrstuvwxyz"
@@ -129,7 +157,7 @@ class FighterScraper(BaseScraper):
 
         soups = [result[1] for result in links_to_soups(urls, self.n_sessions)]
 
-        # Now we iterate over each page and scrape fighter links
+        # Collect fighter URLs from each page
         fighter_urls = []
         for soup in soups:
             if soup is not None:
@@ -141,6 +169,15 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_l_name(name: List[str]) -> str:
+        """
+        Parses the last name from a list of name parts.
+
+        Args:
+            name: List of name parts.
+
+        Returns:
+            The parsed last name, or "NULL" if it cannot be determined.
+        """
         if len(name) == 2:
             return name[-1]
         elif len(name) == 1:
@@ -154,6 +191,15 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_nickname(nickname: bs4.element.Tag) -> str:
+        """
+        Parses the fighter's nickname.
+
+        Args:
+            nickname: BeautifulSoup tag containing the nickname.
+
+        Returns:
+            The parsed nickname, or "NULL" if not available.
+        """
         if nickname.text == "\n":
             return "NULL"
         else:
@@ -161,19 +207,35 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_height(height: bs4.element.Tag) -> str:
-        # Converts height in feet/inches to height in cm
+        """
+        Parses and converts fighter's height from feet and inches to cm.
+
+        Args:
+            height: BeautifulSoup tag containing the height in feet and inches.
+
+        Returns:
+            The height in centimeters, or "NULL" if not available.
+        """
         height_text = height.text.split(":")[1].strip()
         if "--" in height_text.split("'"):
             return "NULL"
         else:
-            height_ft = height_text[0]
-            height_in = height_text.split("'")[1].strip().strip('"')
-            height_cm = ((int(height_ft) * 12.0) * 2.54) + (int(height_in) * 2.54)
+            height_ft = int(height_text[0])
+            height_in = int(height_text.split("'")[1].strip().strip('"'))
+            height_cm = (height_ft * 12.0 * 2.54) + (height_in * 2.54)
             return str(height_cm)
 
     @staticmethod
     def parse_reach(reach: bs4.element.Tag) -> str:
-        # Converts reach in inches to reach in cm
+        """
+        Parses and converts fighter's reach from inches to cm.
+
+        Args:
+            reach: BeautifulSoup tag containing the reach in inches.
+
+        Returns:
+            The reach in centimeters, or "NULL" if not available.
+        """
         reach_text = reach.text.split(":")[1]
         if "--" in reach_text:
             return "NULL"
@@ -182,6 +244,15 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_weight(weight_element: bs4.element.Tag) -> str:
+        """
+        Parses the fighter's weight.
+
+        Args:
+            weight_element: BeautifulSoup tag containing the weight.
+
+        Returns:
+            The weight in pounds, or "NULL" if not available.
+        """
         weight_text = weight_element.text.split(":")[1]
         if "--" in weight_text:
             return "NULL"
@@ -190,6 +261,15 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_stance(stance: bs4.element.Tag) -> str:
+        """
+        Parses the fighter's stance.
+
+        Args:
+            stance: BeautifulSoup tag containing the stance.
+
+        Returns:
+            The stance, or "NULL" if not available.
+        """
         stance_text = stance.text.split(":")[1]
         if stance_text == "":
             return "NULL"
@@ -198,7 +278,15 @@ class FighterScraper(BaseScraper):
 
     @staticmethod
     def parse_dob(dob: bs4.element.Tag) -> str:
-        # Converts string containing date of birth to datetime object
+        """
+        Parses and formats the fighter's date of birth.
+
+        Args:
+            dob: BeautifulSoup tag containing the date of birth.
+
+        Returns:
+            The date of birth in YYYY-MM-DD format, or "NULL" if not available.
+        """
         dob_text = dob.text.split(":")[1].strip()
         if dob_text == "--":
             return "NULL"

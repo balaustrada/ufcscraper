@@ -29,6 +29,23 @@ logger = logging.getLogger(__name__)
 
 
 class BestFightOddsScraper(BaseScraper):
+    """A scraper for Best Fight Odds data.
+
+    This class is responsible for scraping betting odds data for fighters 
+    from Best Fight Odds. It supports parallel processing to speed up 
+    the scraping process and handles captcha detection (not solving).
+
+    Attributes:
+        columns: List of column names for the DataFrame.
+        data: DataFrame to store scraped odds data.
+        filename: Name of the CSV file to save odds data.
+        n_sessions: Number of concurrent browser sessions.
+        min_score: Minimum score for matching fighter names.
+        max_exception_retries: Maximum number of retries for failed 
+            requests.
+        wait_time: Time to wait for elements to load.
+        web_url: Base URL for Best Fight Odds website.
+    """
     columns: List[str] = [
         "fight_id",
         "fighter_id",
@@ -52,6 +69,20 @@ class BestFightOddsScraper(BaseScraper):
         min_score: Optional[int] = None,
         min_date: datetime.date = datetime.date(2008, 8, 1),
     ):
+        """Initialize the BestFightOddsScraper.
+
+        It extends the BaseScraper class by adding score for 
+        naming matching, date filtering and initializes fighter_names
+        class correspondent to the data_folder.
+
+        Args:
+            data_folder: Path to the folder where data is stored.
+            n_sessions: Number of concurrent browser sessions.
+            delay: Delay between requests.
+            min_score: Minimum score for name matching.
+            min_date: Minimum date for filtering events. Events prior to August
+                2008 are not available.
+        """
         super().__init__(data_folder, n_sessions, delay)
 
         # For this scraper it is better to not continuously reload the driver
@@ -62,12 +93,13 @@ class BestFightOddsScraper(BaseScraper):
 
     @classmethod
     def create_search_url(cls, query: str) -> str:
-        """
-        Create the search url
+        """Create the search URL for a fighter.
 
-        :param query: The name of the fighter
+        Args:
+            query: Name of the fighter.
 
-        :return: The search url
+        Returns:
+            Search URL as a string.
         """
         encoded_query = urllib.parse.quote_plus(query)
         search_url = f"{cls.web_url}/search?query={encoded_query}"
@@ -76,12 +108,13 @@ class BestFightOddsScraper(BaseScraper):
 
     @staticmethod
     def captcha_indicator(driver: webdriver.Chrome) -> bool: # pragma: no cover
-        """
-        Check if there is a captcha
+        """ Check if there is a captcha.
 
-        :param driver: The webdriver
+        Args:
+            driver: The web driver instance.
 
-        :return: True if there is a captcha else False
+        Returns:
+            True if captcha is detected, otherwise False.
         """
         elements = driver.find_elements(By.ID, "hfmr8")
         if len(elements) > 0:
@@ -99,6 +132,15 @@ class BestFightOddsScraper(BaseScraper):
     ) -> Callable[
         [multiprocessing.Queue, multiprocessing.Queue, webdriver.Chrome], None
     ]:
+        """Construct the worker target function for parallel processing.
+
+        Args:
+            method: Method to be used by worker function.
+
+        Returns:
+            A worker function that processes tasks from a queue and puts 
+                results in another queue.
+        """
         def worker(
             task_queue: multiprocessing.Queue,
             result_queue: multiprocessing.Queue,
@@ -141,7 +183,7 @@ class BestFightOddsScraper(BaseScraper):
 
         return worker
 
-    def get_odds_from_profile_url(
+    def get_odds_from_profile_urls(
         self,
         fighter_BFO_ids: Optional[List[str]] = None,
         fighter_search_names: Optional[List[str]] = None,
@@ -156,6 +198,23 @@ class BestFightOddsScraper(BaseScraper):
         List[int | None],
         List[int | None],
     ]:
+        """Get odds data from multiple fighter profile URLs.
+
+        Given the structure of BFO, it is possible and likely
+        for a fighter to have multiple profile URLs. This method
+        ensures that all the profiles are scraped.
+
+        Args:
+            fighter_BFO_ids: List of fighter IDs from Best Fight Odds.
+            fighter_search_names: List of fighter search names to be
+                searched for.
+            driver: The web driver instance.
+
+        Returns:
+            Tuple containing lists of dates, fighter IDs, fighter names, 
+            opponent IDs, opponent names, opening odds, closing range 
+            mins, and closing range maxs.
+        """
         if driver is None:
             driver = self.drivers[0]
 
@@ -219,6 +278,17 @@ class BestFightOddsScraper(BaseScraper):
         fighters_search_names: List[Set[str]],
         fighters_BFO_ids: List[Set[str]],
     ) -> Tuple[multiprocessing.Queue, multiprocessing.Queue, List[multiprocessing.Process]]:
+        """Scrape odds data in parallel from fighter profile URLs.
+
+        Args:
+            fighters_id: List of fighter IDs.
+            fighters_search_names: Search names to try for each fighter.
+            fighters_BFO_ids: BestFightOdds known IDs for each fighter.
+
+        Returns:
+            Tuple containing result queue, task queue, and list of worker 
+            processes.
+        """        
         task_queue: multiprocessing.Queue = multiprocessing.Queue()
         result_queue: multiprocessing.Queue = multiprocessing.Queue()
 
@@ -235,8 +305,8 @@ class BestFightOddsScraper(BaseScraper):
                 )
             )
 
-        # Define worker around get_odds_from_profile_url
-        worker_target = self.worker_constructor_target(self.get_odds_from_profile_url)
+        # Define worker around get_odds_from_profile_urls
+        worker_target = self.worker_constructor_target(self.get_odds_from_profile_urls)
 
         # Starting workers
         workers = [
@@ -265,6 +335,15 @@ class BestFightOddsScraper(BaseScraper):
         List[int | None],
         List[int | None],
     ]:
+        """Extract odds data from a single fighter's profile page.
+
+        Args:
+            driver: The web driver instance.
+
+        Returns:
+            Tuple containing fighter name, dates, opponent names, opponent 
+            IDs, opening odds, closing range mins, and closing range maxs.
+        """
         # Wait for profile table to be there
         element = WebDriverWait(driver, cls.wait_time).until(
             element_present_in_list(
@@ -347,18 +426,30 @@ class BestFightOddsScraper(BaseScraper):
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
+        """Constructs the BFO URL for a fighter's profile based on their ID.
+
+        Args:
+            id_: The fighter's unique identifier.
+
+        Returns:
+            The URL for the fighter's details page.
+        """
         return f"{cls.web_url}/fighters/{id_}"
 
     def search_fighter_profile(
         self, search_fighter: str, driver: webdriver.Chrome
     ) -> Optional[Tuple[str, str]]:
-        """
-        Search for the given fighter and return the name and the url of the profile
+        """Search for a fighter's profile.
 
-        :param search_fighter: The name of the fighter
-        :param driver: The webdriver
+        Searches for a fighter's profile using the BFO search engine.
 
-        :return: (name, url) if found else None
+        Args:
+            search_fighter: Name of the fighter to search for.
+            driver: The web driver instance.
+
+        Returns:
+            Tuple containing the profile URL and profile ID, or None if 
+            not found.
         """
         url = self.create_search_url(search_fighter)
 
@@ -421,6 +512,17 @@ class BestFightOddsScraper(BaseScraper):
         return None
 
     def get_ufcstats_data(self) -> pd.DataFrame:
+        """ Load UFCStats data.
+
+        Mixes all the data from the scraped UFCStats website to create
+        a dataframe where each row corresponds to a single fight,fighter
+        pair.
+
+        These are the records that will be saved as odds data later.
+
+        Returns:
+            DataFrame containing UFCStats data.
+        """
         logger.info("Loading UFCStats data...")
         ufc_stats_data = UFCScraper(self.data_folder)
 
@@ -552,10 +654,18 @@ class BestFightOddsScraper(BaseScraper):
         ]
 
     @staticmethod
-    def remove_scraped_records(data:pd.DataFrame, odds_data: pd.DataFrame) -> pd.DataFrame:
+    def remove_scraped_records(self, data:pd.DataFrame) -> pd.DataFrame:
+        """Remove records that have already been scraped.
+
+        Args:
+            data: DataFrame containing new data to be scraped.
+
+        Returns:
+            DataFrame with already scraped records removed.
+        """
         return (
             data.merge(
-                odds_data,
+                self.data, # This is the class data.
                 on=["fight_id", "fighter_id"],
                 indicator=True,
                 how="outer",
@@ -575,6 +685,34 @@ class BestFightOddsScraper(BaseScraper):
         fighter_missing_data: pd.DataFrame,
         odds_data: Tuple,  
     ) -> Tuple[List[List[str]], Set[Tuple[str, str, str]]]:
+        """Extract valid fights from odds data.
+
+        Odds data contains all the fights odds and information that was
+        found for a given fighter. This method will find the ones correspondent
+        to the missing fights, and return them as valid fights to be saved
+        to file.
+
+        It also returns the list of names and IDs from BFO which can be
+        added to the FighterName class instance to improve the completeness
+        of the scraping process.
+
+        Args:
+            fighter_missing_data: DataFrame with missing fighter data.
+            odds_data: Tuple containing odds data:
+                - dates: List of dates.
+                - fighter_BFO_ids: List of fighter BFO IDs.
+                - fighter_BFO_names: List of fighter BFO names.
+                - opponents_BFO_ids: List of opponent BFO IDs.
+                - opponents_BFO_names: List of opponent BFO names.
+                - openings: List of opening odds.
+                - closing_range_mins: List of minimum closing odds.
+                - closing_range_maxs: List of maximum closing odds.
+
+        Returns:
+            Tuple containing:
+                - odds_records: List of valid odds records.
+                - BFO_names: Set of tuples with BFO IDs and names.
+        """
         dates, fighter_BFO_ids, fighter_BFO_names, opponents_BFO_ids, opponents_BFO_names, openings, closing_range_mins, closing_range_maxs = odds_data
 
         BFO_names: Set[Tuple[str, str, str]] = set()
@@ -653,6 +791,22 @@ class BestFightOddsScraper(BaseScraper):
         
 
     def scrape_BFO_odds(self) -> None:
+        """Scrape Best Fight Odds (BFO) and update records.
+
+        This method performs the following:
+            1. Checks for missing fighter records.
+            2. Retrieves UFCStats data.
+            3. Removes already scraped records.
+            4. Collects data for scraping.
+            5. Scrapes data in parallel from BFO URLs.
+            6. Updates records and retries if necessary.
+
+        Each time a record is added, the BFO IDs and therefore
+        URLs are stored, therefore in the next iteration it will
+        capture records from fighters that were missing in the previous.
+        This is why the scraping process is iterative until a iteration
+        is performed with no new records found.
+        """
         self.fighter_names.check_missing_records()
 
         # Get data, this can have up to 4 entries for each fighter
@@ -660,7 +814,7 @@ class BestFightOddsScraper(BaseScraper):
         # x2 for each database (UFCStats, BestFightOdds)
         ufc_stats_data = self.get_ufcstats_data()
 
-        data_to_scrape = self.remove_scraped_records(ufc_stats_data, self.data)
+        data_to_scrape = self.remove_scraped_records(ufc_stats_data)
         logger.info(f"Number of rows to scrape: {len(data_to_scrape)}")
 
         ########################################################
@@ -764,6 +918,17 @@ class BestFightOddsScraper(BaseScraper):
 
 
 class FighterNames(BaseFileHandler):
+    """A class to manage and handle fighter names and their associated data.
+
+    This class is responsible for loading and checking records of fighters 
+    from various data sources. It manages the storage of fighter information, 
+    including IDs, names, and database identifiers. 
+
+    Attributes:
+        columns (List[str]): List of column names used in the DataFrame.
+        data (pd.DataFrame): DataFrame to store fighter names and related information.
+        filename (str): Name of the file where fighter names are stored.
+    """
     columns: List[str] = [
         "fighter_id",
         "database",
@@ -774,6 +939,11 @@ class FighterNames(BaseFileHandler):
     filename = "fighter_names.csv"
 
     def check_missing_records(self) -> None:
+        """Check for missing records in the UFCStats data.
+
+        Compares the current data with the UFCStats data to identify
+        missing records. Appends new records to the CSV file if any are found.
+        """
         logger.info("Checking missing records...")
         ufc_stats_data = self.get_ufcstats_data()
 
@@ -801,6 +971,17 @@ class FighterNames(BaseFileHandler):
             self.load_data()
 
     def fighter_in_database(self, fighter_id: str, database: str, name: str, database_id: str) -> bool:
+        """Check if a fighter is present in the database.
+
+        Args:
+            fighter_id: The ID of the fighter.
+            database: The name of the database.
+            name: The name of the fighter.
+            database_id: The ID of the fighter in the database.
+
+        Returns:
+            True if the fighter is in the database, False otherwise.
+        """
         return bool(
             (
                 (self.data["fighter_id"] == fighter_id)
@@ -811,10 +992,20 @@ class FighterNames(BaseFileHandler):
         )
 
     def get_ufcstats_data(self) -> pd.DataFrame:
+        """Retrieve and prepare UFCStats data.
+
+        Loads and processes data from UFCStats, including fights, and
+        fighter details. Merges the data to create a comprehensive DataFrame.
+
+        This can be later compared with the data in the CSV file to identify
+        missing records.
+
+        Returns:
+            DataFrame containing processed UFCStats data.
+        """
         logger.info("Loading UFCStats data...")
         ufc_stats_data = UFCScraper(self.data_folder)
 
-        events_ = ufc_stats_data.event_scraper.data
         fights = ufc_stats_data.fight_scraper.data
 
         fighters_object = ufc_stats_data.fighter_scraper

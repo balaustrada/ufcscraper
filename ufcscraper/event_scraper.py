@@ -21,6 +21,18 @@ logger = logging.getLogger(__name__)
 
 
 class EventScraper(BaseScraper):
+    """Scrapes event data from the UFCStats website.
+
+    This class handles scraping event details such as event name, date, city,
+    state, and country, and stores them in a CSV file. It inherits basic
+    scraping functionality from `BaseScraper`.
+
+    Attributes:
+        columns: The column names for the CSV file.
+        data: A pandas DataFrame initialized with the column names.
+        filename: The name of the CSV file where event data is stored.
+    """
+
     columns: List[str] = [
         "event_id",
         "event_name",
@@ -34,9 +46,23 @@ class EventScraper(BaseScraper):
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
+        """Constructs the event URL using the event ID.
+
+        Args:
+            id_: The unique identifier for the event.
+
+        Returns:
+            The full URL to the event's details page on UFCStats.
+        """
         return f"{cls.web_url}/event-details/{id_}"
 
     def scrape_events(self) -> None:
+        """Scrapes event data and saves it to a CSV file.
+
+        This method compares existing event URLs with those available on the
+        UFCStats website, scrapes details of new events, and appends them to
+        the CSV file. Logs the progress and any errors encountered.
+        """
         existing_urls = set(map(self.url_from_id, self.data["event_id"]))
         ufcstats_event_urls = self.get_event_urls()
         urls_to_scrape = set(ufcstats_event_urls) - existing_urls
@@ -86,10 +112,13 @@ class EventScraper(BaseScraper):
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
 
     def get_event_urls(self) -> List[str]:
-        """
-        Get the urls of the events.
+        """Retrieves the URLs of all completed events from UFCStats.
 
-        :return: The urls of the events.
+        This method scrapes the UFCStats website for event URLs that contain
+        the keyword 'event-details'. It returns a list of these URLs.
+
+        Returns:
+            A list of URLs for completed events.
         """
         logger.info("Scraping event links...")
 

@@ -24,6 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 class FightScraper(BaseScraper):
+    """Scrapes fight data from the UFCStats website.
+
+    This class inherits from `BaseScraper` and handles scraping detailed
+    fight statistics including fighters, referees, results, and more. It
+    saves the scraped data into two CSV files: one for fights and one for
+    rounds (through the companion class `RoundsHandler`).
+
+    Attributes:
+        columns: The column names for the CSV file.
+        data: A pandas DataFrame initialized with the column names.
+        filename: The name of the CSV file where fight data is stored.
+    """
+
     columns: List[str] = [
         "fight_id",
         "event_id",
@@ -45,15 +58,38 @@ class FightScraper(BaseScraper):
     filename = "fight_data.csv"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initializes the FightScraper and the companion RoundsHandler.
+
+        Args:
+            *args: Additional positional arguments passed to the base class.
+            **kwargs: Additional keyword arguments passed to the base class.
+        """
         super().__init__(*args, **kwargs)
 
         self.rounds_handler = RoundsHandler(self.data_folder)
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
+        """Constructs the fight URL using the fight ID.
+
+        Args:
+            id_: The unique identifier for the fight.
+
+        Returns:
+            The full URL to the fight's details page on UFCStats.
+        """
         return f"{cls.web_url}/fight-details/{id_}"
 
     def scrape_fights(self, get_all_events: bool = False) -> None:
+        """ Scrapes fight data and saves it to CSV files.
+
+        This method scrapes fight details and round statistics. It saves the
+        fight details and round statistics to separate CSV files.
+
+        Args:
+            get_all_events: If False, only scrapes fights from events not
+                already scraped.
+        """
         existing_urls = set(map(self.url_from_id, self.data["fight_id"]))
         ufcstats_fight_urls = self.get_fight_urls(get_all_events)
         urls_to_scrape = set(ufcstats_fight_urls) - existing_urls
@@ -144,13 +180,14 @@ class FightScraper(BaseScraper):
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
 
     def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
-        """
-        Get the urls of the fights.
+        """ Retrieves URLs of all fights from UFCStats.
 
-        :param get_all_events: If False, only the links from events that have not
-        been scraped will be get.
+        Args:
+            get_all_events: If False, only gets URLs for fights from events
+                not already scraped.
 
-        :return: The urls of the fights.
+        Returns:
+            A list of URLs for fights.
         """
         logger.info("Scraping fight links...")
 
@@ -181,6 +218,14 @@ class FightScraper(BaseScraper):
 
     @staticmethod
     def get_referee(overview: bs4.element.ResultSet) -> str:
+        """Extracts the referee's name from the fight overview.
+
+        Args:
+            overview: A ResultSet containing fight overview information.
+
+        Returns:
+            The referee's name, or 'NULL' if not found.
+        """
         try:
             return overview[3].text.split(":")[1]
         except:
@@ -190,6 +235,15 @@ class FightScraper(BaseScraper):
     def get_fighters(
         fight_details: bs4.element.ResultSet, fight_soup: bs4.BeautifulSoup
     ) -> Tuple[str, str]:
+        """Extracts fighter IDs from the fight details.
+
+        Args:
+            fight_details: A ResultSet containing fight detail information.
+            fight_soup: The BeautifulSoup object containing the fight page.
+
+        Returns:
+            A tuple containing the IDs of the two fighters.
+        """
         # Scrape both fighter names
         try:
             fighters = (
@@ -214,6 +268,17 @@ class FightScraper(BaseScraper):
     def get_winner(
         fighter_1: str, fighter_2: str, win_lose: bs4.element.ResultSet
     ) -> str:
+        """ Determines the winner of the fight based on the win/lose status.
+
+        Args:
+            fighter_1: The ID of the first fighter.
+            fighter_2: The ID of the second fighter.
+            win_lose: A ResultSet containing win/lose status for the fighters.
+
+        Returns:
+            The ID of the winner, or 'Draw' if it's a draw, or 'NULL' if not 
+                determined.
+        """
         fighter_1_result = win_lose[0].text.strip()
         fighter_2_result = win_lose[1].text.strip()
 
@@ -229,6 +294,14 @@ class FightScraper(BaseScraper):
     # Checks if fight is title fight
     @staticmethod
     def get_title_fight(fight_type: bs4.element.ResultSet) -> str:
+        """Determines if the fight is a title fight.
+
+        Args:
+            fight_type: A ResultSet containing fight type information.
+
+        Returns:
+            'T' if it's a title fight, 'F' otherwise.
+        """
         if "Title" in fight_type[0].text:
             return "T"
         else:
@@ -237,6 +310,14 @@ class FightScraper(BaseScraper):
     # Scrapes weight class of fight
     @staticmethod
     def get_weight_class(fight_type: bs4.element.ResultSet) -> str:
+        """Extracts the weight class of the fight.
+
+        Args:
+            fight_type: A ResultSet containing fight type information.
+
+        Returns:
+            The weight class of the fight, or 'NULL' if not found.
+        """
         if "Light Heavyweight" in fight_type[0].text.strip():
             return "Light Heavyweight"
 
@@ -258,6 +339,14 @@ class FightScraper(BaseScraper):
     # Checks gender of fight
     @staticmethod
     def get_gender(fight_type: bs4.element.ResultSet) -> str:
+        """Determines the gender of the fight.
+
+        Args:
+            fight_type: A ResultSet containing fight type information.
+
+        Returns:
+            'F' if it's a women's fight, 'M' otherwise.
+        """
         if "Women" in fight_type[0].text:
             return "F"
         else:
@@ -269,6 +358,16 @@ class FightScraper(BaseScraper):
         select_result: bs4.element.ResultSet,
         select_result_details: bs4.element.ResultSet,
     ) -> Tuple[str, str]:
+        """
+        Extracts the result and details of the fight.
+
+        Args:
+            select_result: A ResultSet containing the fight result.
+            select_result_details: A ResultSet containing additional result details.
+
+        Returns:
+            A tuple with the result type and result details.
+        """
         if "Decision" in select_result[0].text.split(":")[1]:
             return (
                 select_result[0].text.split(":")[1].split()[0],
@@ -282,6 +381,17 @@ class FightScraper(BaseScraper):
 
 
 class RoundsHandler(BaseFileHandler):
+    """Handles the manipulation and storage of round statistics.
+
+    This class inherits from `BaseFileHandler` and manages round-specific
+    statistics, including strikes, takedowns, and control time. It formats
+    and saves the data to a CSV file.
+
+    Attributes:
+        columns: The column names for the CSV file.
+        data: A pandas DataFrame initialized with the column names.
+        filename: The name of the CSV file where round data is stored.
+    """
     columns: List[str] = [
         "fight_id",
         "fighter_id",
@@ -317,7 +427,22 @@ class RoundsHandler(BaseFileHandler):
     def get_stats(
         fight_stats: bs4.element.ResultSet, fighter: int, round_: int, finish_round: int
     ) -> Tuple[str, ...]:
-        """fighter is 0 or 1"""
+        """
+        Extracts round statistics for a specific fighter in a given fight.
+
+        Args:
+            fight_stats: A ResultSet containing fight statistics.
+            fighter: The index of the fighter (0 or 1).
+            round_: The round number.
+            finish_round: The total number of rounds.
+
+        Returns:
+            A tuple of statistics for the specified fighter in the given round.
+            Returns "NULL" for all fields if an error occurs.
+
+        Raises:
+            ValueError: If `fighter` is not 0 or 1.
+        """
         if fighter not in (0, 1):
             raise ValueError(f"fighter must be 0 or 1, not {fighter}")
 

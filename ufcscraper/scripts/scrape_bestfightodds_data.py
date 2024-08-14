@@ -16,6 +16,15 @@ from ufcscraper.odds_scraper import BestFightOddsScraper
 
 
 def main(args: Optional[argparse.Namespace] = None) -> None:
+    """Main entry point for the script.
+
+    This function sets up logging configuration, parses command-line arguments 
+    (if not provided), initializes a `BestFightOddsScraper` instance, and triggers 
+    the scraping process.
+
+    Args:
+        args: Command-line arguments. If None, arguments are parsed using `get_args`.
+    """
     if args is None:
         args = get_args()
 
@@ -37,6 +46,12 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
 
 
 def get_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments and return them as an `argparse.Namespace` object.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

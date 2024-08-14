@@ -24,6 +24,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_session() -> requests.Session:
+    """
+    Create and configure a new `requests.Session` object with retry functionality.
+
+    Returns:
+        requests.Session: A configured session object with retry strategy.
+    """
     retry_strategy = Retry(
         total=3,
         backoff_factor=2,
@@ -42,6 +48,24 @@ def get_session() -> requests.Session:
 def links_to_soups(
     urls: List[str], n_sessions: int = 1, delay: float = 0
 ) -> Generator[Tuple[str, bs4.BeautifulSoup]]:
+    """Parse the HTML content from given URLs into a BeautifulSoup objects.
+        
+    Create a generator that yields tuples of URLs and their corresponding 
+    BeautifulSoup objects.
+
+    This function uses multiple processes to fetch and parse web pages 
+    concurrently.
+
+    Args:
+        urls: List of URLs to be scraped.
+        n_sessions: Number of concurrent sessions to use 
+            for scraping. Defaults to 1.
+        delay: Delay in seconds to wait before making each 
+            request. Defaults to 0.
+
+    Returns:
+        Tuples containing the URL and the corresponding BeautifulSoup object.
+    """
     task_queue: multiprocessing.Queue = multiprocessing.Queue()
     result_queue: multiprocessing.Queue = multiprocessing.Queue()
 
@@ -88,14 +112,16 @@ def links_to_soups(
 def link_to_soup(
     url: str, session: Optional[requests.Session] = None, delay: float = 0
 ) -> bs4.BeautifulSoup:
-    """
-    Given a url, return the BeautifulSoup object
+    """Parse the HTML content of a given URL into a BeautifulSoup object.
 
-    :param url: The url to scrape
-    :param session: The requests session
-    :param delay: The delay to wait before scraping
+    Args:
+        url: The URL to scrape.
+        session: A requests session object. If not provided, a new session 
+            will be created. 
+        delay: Delay in seconds before making the request.
 
-    :return: The BeautifulSoup object
+    Returns:
+        Parsed BeautifulSoup object containing the HTML content of the page.
     """
     if delay > 0:
         time.sleep(delay)
@@ -113,6 +139,16 @@ def worker_constructor(
     method: Callable[..., T],
     max_exception_retries: int = 4,
 ) -> Callable[[multiprocessing.Queue, multiprocessing.Queue, requests.Session], None]:
+    """Create a worker target function for processing tasks with retry functionality.
+
+    Args:
+        method: The function to be executed by the worker.
+        max_exception_retries : Maximum number of retries for handling exceptions.
+
+    Returns:
+        A worker function that processes tasks from a queue and puts results in 
+            another queue.
+    """
     def worker(
         task_queue: multiprocessing.Queue,
         result_queue: multiprocessing.Queue,
@@ -157,14 +193,29 @@ def worker_constructor(
 
 
 class element_present_in_list(object):
-    """
-    Custom function to check if an element is present in a list of elements
-    """
+    """Callable to check if an element is present in a list of elements on a web page.
 
+    Attributes:
+        locators (Tuple[str, str]): Locators used to find elements on the page.
+    """
     def __init__(self, *locators: Tuple[str, str]):
+        """Initialize the element_present_in_list class.
+        
+        Args:
+            locators: List of all locators used to find elements on the page.
+        """
         self.locators = locators
 
     def __call__(self, driver: webdriver.Chrome) -> bool | List[WebElement]:
+        """ Check if any elements matching the locators are present on the page.
+
+        Args:
+            driver: The WebDriver instance used to interact with the web page.
+
+        Returns:
+            True if elements are found, otherwise False. If elements are found, 
+                returns the list of WebElements.
+        """
         for locator in self.locators:
             elements = driver.find_elements(*locator)
             if elements:
@@ -174,13 +225,14 @@ class element_present_in_list(object):
 
 def clean_date_string(date_str: str) -> str:
     """
-    Clean the date string to be parsed into a datetime object
+    Clean a date string to remove incorrect ordinal suffixes and make it 
+        suitable for parsing.
 
     Args:
-        date_str (str): The date string to be cleaned
+        date_str (str): The date string to be cleaned.
 
     Returns:
-        str: The cleaned date string
+        str: The cleaned date string.
     """
     # Replace incorrect ordinal suffixes
     date_str = re.sub(r"(\d)(nd|st|rd|th)", r"\1", date_str)
@@ -188,14 +240,14 @@ def clean_date_string(date_str: str) -> str:
 
 
 def parse_date(date_str: str) -> Optional[datetime.date]:
-    """
-    Parse the date string into a datetime object
+    """Parse a date string into a `datetime.date` object.
 
     Args:
-        date_str (str): The date string to be parsed
+        date_str (str): The date string to be parsed.
 
     Returns:
-        date: The parsed date object
+        Optional[datetime.date]: The parsed date object if successful, 
+            otherwise None.
     """
     # Clean the date string
     cleaned_date_str = clean_date_string(date_str)
