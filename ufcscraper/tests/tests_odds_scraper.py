@@ -1,39 +1,23 @@
 from __future__ import annotations
 
-import unittest
-from pathlib import Path
-from shutil import copy, rmtree
-from unittest.mock import Mock, patch, MagicMock
-
-import requests
-
-from ufcscraper.event_scraper import *
-
-import csv
 import datetime
 import logging
 import multiprocessing
-import time
-import urllib
+import unittest
 from pathlib import Path
+from shutil import copy, rmtree
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, Mock, patch
 
 import pandas as pd
-from bs4 import BeautifulSoup
-from fuzzywuzzy import fuzz, process
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 
-from ufcscraper.base import BaseScraper
-from ufcscraper.ufc_scraper import UFCScraper
-from ufcscraper.utils import element_present_in_list, parse_date
+from ufcscraper.event_scraper import *
 from ufcscraper.odds_scraper import BestFightOddsScraper
 
 if TYPE_CHECKING:
     import datetime
-    from typing import Any, Callable, List, Optional, Set, Tuple
+    from typing import Callable, List, Optional, Tuple
 
 
 THIS_DIR = Path(__file__).parent
