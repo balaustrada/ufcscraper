@@ -14,7 +14,7 @@ import pandas as pd
 from ufcscraper.base import BaseScraper
 from ufcscraper.utils import link_to_soup, links_to_soups
 
-if TYPE_CHECKING: # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     from typing import List
 
 logger = logging.getLogger(__name__)
@@ -101,6 +101,6 @@ class EventScraper(BaseScraper):
             for item in soup.find_all("a")
             if type(item.get("href")) == str and "event-details" in item.get("href")
         ]
-        
+
         logger.info(f"Got {len(event_urls)} event links...")
         return event_urls

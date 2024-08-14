@@ -58,7 +58,6 @@ def mock_url_from_id_fight(id_: str) -> str:
 
 
 class TestFightScraper(unittest.TestCase):
-
     def setUp(self) -> None:
         Path(THIS_DIR / "test_files/run_files").mkdir(exist_ok=True)
         self.scraper = FightScraper(
@@ -159,7 +158,6 @@ class TestFightScraper(unittest.TestCase):
                 ),
             )
 
-
     def test_minor_methods(self) -> None:
         self.assertEqual(
             "http://www.ufcstats.com/fight-details/fight1",
@@ -171,10 +169,7 @@ class TestFightScraper(unittest.TestCase):
         win_lose.__len__.return_value = 2
         win_lose[0].text = "D"
         win_lose[1].text = "D"
-        self.assertEqual(
-            "Draw",
-            self.scraper.get_winner("a", "b", win_lose)
-        )
+        self.assertEqual("Draw", self.scraper.get_winner("a", "b", win_lose))
 
         win_lose = MagicMock()
         win_lose.__iter__.return_value = iter([Mock(), Mock()])
@@ -204,14 +199,15 @@ class TestFightScraper(unittest.TestCase):
             self.scraper.get_referee(overview),
         )
 
-        soup = bs4.BeautifulSoup(Path(THIS_DIR / "test_files/htmls/fight_page8.html").read_text(), "xml")
+        soup = bs4.BeautifulSoup(
+            Path(THIS_DIR / "test_files/htmls/fight_page8.html").read_text(), "xml"
+        )
         fight_stats_select = soup.select("p.b-fight-details__table-text")
 
         self.assertEqual(
-            ("NULL",)*22,
+            ("NULL",) * 22,
             RoundsHandler.get_stats(fight_stats_select, 0, 0, 0),
         )
 
         with self.assertRaises(ValueError):
             RoundsHandler.get_stats(fight_stats_select, 2, 0, 2)
-

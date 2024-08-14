@@ -156,7 +156,7 @@ def mock_worker_constructor(method: Callable) -> Callable:
                 task = task_queue.get()
                 if task is None:
                     break
-                
+
                 args: Tuple[Optional[List[str]], Optional[List[str]]]
                 args, id_ = task
                 result = None
@@ -258,7 +258,9 @@ class TestOddsScraper(unittest.TestCase):
         mock_elements[0].get_attribute.side_effect = lambda x: (
             "content-list"
             if x == "class"
-            else search_html if x == "innerHTML" else None
+            else search_html
+            if x == "innerHTML"
+            else None
         )
 
         mock_wait = MockWait.return_value

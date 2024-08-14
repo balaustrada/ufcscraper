@@ -9,10 +9,11 @@ from abc import ABC, abstractmethod
 import pandas as pd
 
 
-if TYPE_CHECKING: # pragma: no cover
-    from typing import List, Optional 
+if TYPE_CHECKING:  # pragma: no cover
+    from typing import List, Optional
 
 logger = logging.getLogger(__name__)
+
 
 class BaseFileHandler(ABC):
     columns: List[str]
@@ -69,7 +70,6 @@ class BaseScraper(BaseFileHandler):
         super().__init__(data_folder)
         self.n_sessions = n_sessions or self.n_sessions
         self.delay = delay or self.delay
-
 
     @staticmethod
     def id_from_url(url: str) -> str:

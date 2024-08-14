@@ -16,7 +16,7 @@ from ufcscraper.event_scraper import EventScraper
 from ufcscraper.fighter_scraper import FighterScraper
 from ufcscraper.utils import links_to_soups
 
-if TYPE_CHECKING: # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     import bs4
     from typing import Any, List, Tuple
 
@@ -196,7 +196,7 @@ class FightScraper(BaseScraper):
                 fight_details[0].select("a.b-link.b-link_style_black")[0]["href"],
                 fight_details[1].select("a.b-link.b-link_style_black")[0]["href"],
             )
-        except: # pragma: no cover
+        except:  # pragma: no cover
             fighters = (
                 fight_soup.select("a.b-fight-details__person-link")[0]["href"],
                 fight_soup.select("a.b-fight-details__person-link")[1]["href"],
