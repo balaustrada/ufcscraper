@@ -81,9 +81,13 @@ class FightScraper(BaseScraper):
                     fight_type = soup.select("i.b-fight-details__fight-title")
                     win_lose = soup.select("i.b-fight-details__person-status")
 
-                    event_id = EventScraper.id_from_url(
-                        soup.h2.select("a.b-link")[0]["href"]
-                    )
+                    if soup.h2 is not None:
+                        event_id = EventScraper.id_from_url(
+                            str(soup.h2.select("a.b-link")[0]["href"])
+                        )
+                    else:
+                        raise TypeError("Couldn't find header in the soup.")
+
                     referee = self.get_referee(overview)
                     fighter_1, fighter_2 = self.get_fighters(fight_details, soup)
                     num_rounds = overview[2].text.split(":")[1].strip()[0].strip()

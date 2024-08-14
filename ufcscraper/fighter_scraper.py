@@ -14,11 +14,12 @@ import pandas as pd
 from ufcscraper.base import BaseScraper
 from ufcscraper.utils import links_to_soups
 
-if TYPE_CHECKING: # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     import bs4
     from typing import List
 
 logger = logging.getLogger(__name__)
+
 
 class FighterScraper(BaseScraper):
     columns: List[str] = [
@@ -69,7 +70,7 @@ class FighterScraper(BaseScraper):
 
                     f_name = name[0].strip()
                     l_name = self.parse_l_name(name).strip()
-                    nickname = self.parse_nickname(nickname).strip()
+                    nickname_str = self.parse_nickname(nickname).strip()
                     height = self.parse_height(details[0])
                     weight = self.parse_weight(details[1])
                     reach = self.parse_reach(details[2])
@@ -87,7 +88,7 @@ class FighterScraper(BaseScraper):
                             self.id_from_url(url),
                             f_name,
                             l_name,
-                            nickname,
+                            nickname_str,
                             height,
                             weight,
                             reach,
@@ -133,7 +134,7 @@ class FighterScraper(BaseScraper):
         for soup in soups:
             if soup is not None:
                 for link in soup.select("a.b-link")[1::3]:
-                    fighter_urls.append(link.get("href"))
+                    fighter_urls.append(str(link.get("href")))
 
         logger.info(f"Got {len(fighter_urls)} urls...")
         return fighter_urls

@@ -49,13 +49,30 @@ fighters_ids = {
 
 fighters_names = {v: k for k, v in fighters_ids.items()}
 
-def mock_search_fighter(search_fighter:str, driver: webdriver.Chrome):
+
+def mock_search_fighter(
+    search_fighter: str, driver: Optional[webdriver.Chrome]
+) -> Optional[Tuple[str, str]]:
     if search_fighter in fighters_ids and search_fighter != "Max Power":
-        return (search_fighter, fighters_ids[search_fighter])  
+        return (search_fighter, fighters_ids[search_fighter])
     else:
         return None
 
-def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Optional[List[str]], driver: Optional[webdriver.Chrome]):
+
+def mock_get_odds(
+    fighter_BFO_ids: Optional[List[str]],
+    fighter_search_names: Optional[List[str]],
+    driver: Optional[webdriver.Chrome],
+) -> Tuple[
+    List[datetime.date | None],
+    List[str],
+    List[str],
+    List[str],
+    List[str],
+    List[int | None],
+    List[int | None],
+    List[int | None],
+]:
     if fighter_BFO_ids is None:
         fighter_BFO_ids = []
     if fighter_search_names is None:
@@ -81,13 +98,15 @@ def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Op
     # try all of them
     for fighter_BFO_id in fighter_BFO_ids + new_ids:
         id_BFO_name = fighters_names[fighter_BFO_id]
-        id_dates = []
+        id_dates: List[datetime.date | None] = []
         id_opponents_name = []
         id_opponents_id = []
-        id_openings = []
-        id_closing_range_mins = []
-        id_closing_range_maxs = []
-        for _, row in odds_lookup[odds_lookup["fighter_id"] == fighter_BFO_id].iterrows():
+        id_openings: List[int | None] = []
+        id_closing_range_mins: List[int | None] = []
+        id_closing_range_maxs: List[int | None] = []
+        for _, row in odds_lookup[
+            odds_lookup["fighter_id"] == fighter_BFO_id
+        ].iterrows():
             fight_id = row["fight_id"]
             if fight_id in ["fight1", "fight2"]:
                 id_dates.append(datetime.date(2020, 6, 1))
@@ -95,7 +114,7 @@ def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Op
                 id_dates.append(datetime.date(2020, 8, 1))
             else:
                 id_dates.append(datetime.date(2020, 9, 2))
-            
+
             if fighter_BFO_id == "fighter1":
                 id_opponents_id.append("fighter2")
                 id_opponents_name.append(fighters_names["fighter2"])
@@ -119,7 +138,6 @@ def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Op
             id_closing_range_mins.append(row["closing_range_min"])
             id_closing_range_maxs.append(row["closing_range_max"])
 
-
         found_fighter_BFO_ids += [fighter_BFO_id] * len(id_dates)
         found_fighter_BFO_names += [id_BFO_name] * len(id_dates)
         found_dates += id_dates
@@ -129,7 +147,16 @@ def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Op
         found_closing_range_mins += id_closing_range_mins
         found_closing_range_maxs += id_closing_range_maxs
 
-    print(found_dates, found_fighter_BFO_ids, found_fighter_BFO_names, found_opponents_ids, found_opponents_names, found_openings, found_closing_range_mins, found_closing_range_maxs)
+    print(
+        found_dates,
+        found_fighter_BFO_ids,
+        found_fighter_BFO_names,
+        found_opponents_ids,
+        found_opponents_names,
+        found_openings,
+        found_closing_range_mins,
+        found_closing_range_maxs,
+    )
     return (
         found_dates,
         found_fighter_BFO_ids,
@@ -141,8 +168,10 @@ def mock_get_odds(fighter_BFO_ids: Optional[List[str]], fighter_search_names: Op
         found_closing_range_maxs,
     )
 
-def mock_worker_constructor(method):
-    print('mock constructor')
+
+def mock_worker_constructor(method: Callable) -> Callable:
+    print("mock constructor")
+
     def worker(
         task_queue: multiprocessing.Queue,
         result_queue: multiprocessing.Queue,
@@ -153,7 +182,8 @@ def mock_worker_constructor(method):
                 task = task_queue.get()
                 if task is None:
                     break
-
+                
+                args: Tuple[Optional[List[str]], Optional[List[str]]]
                 args, id_ = task
                 result = None
 
@@ -185,6 +215,7 @@ def mock_worker_constructor(method):
 
     return worker
 
+
 class TestOddsScraper(unittest.TestCase):
     def setUp(self) -> None:
         Path(THIS_DIR / "test_files/run_files").mkdir(exist_ok=True)
@@ -212,7 +243,9 @@ class TestOddsScraper(unittest.TestCase):
 
     @patch("ufcscraper.odds_scraper.WebDriverWait")
     @patch("ufcscraper.odds_scraper.EC")
-    def test_extract_odds_from_fighter_profile(self, MockEC, MockWait) -> None:
+    def test_extract_odds_from_fighter_profile(
+        self, MockEC: Mock, MockWait: Mock
+    ) -> None:
         mock_elements = [MagicMock()]
         mock_elements[0].get_attribute.return_value = Path(
             THIS_DIR / "test_files/htmls/bfo_profile.html"
@@ -243,7 +276,9 @@ class TestOddsScraper(unittest.TestCase):
     @patch.object(BestFightOddsScraper, "captcha_indicator", return_value=False)
     @patch("ufcscraper.odds_scraper.WebDriverWait")
     @patch("ufcscraper.odds_scraper.EC")
-    def test_search_fighter_profile(self, MockEC, MockWait, mock_check_captcha) -> None:
+    def test_search_fighter_profile(
+        self, MockEC: Mock, MockWait: Mock, mock_check_captcha: Mock
+    ) -> None:
         search_html = Path(THIS_DIR / "test_files/htmls/bfo_search.html").read_text()
         mock_elements = [MagicMock()]
         mock_elements[0].get_attribute.side_effect = lambda x: (
@@ -271,7 +306,7 @@ class TestOddsScraper(unittest.TestCase):
     @patch("ufcscraper.odds_scraper.WebDriverWait")
     @patch("ufcscraper.odds_scraper.EC")
     def test_search_fighter_profile_direct(
-        self, MockEC, MockWait, mock_check_captcha
+        self, MockEC: Mock, MockWait: Mock, mock_check_captcha: Mock
     ) -> None:
         search_html = Path(THIS_DIR / "test_files/htmls/bfo_profile.html").read_text()
         mock_elements = [MagicMock()]
@@ -300,11 +335,14 @@ class TestOddsScraper(unittest.TestCase):
             ),
         )
 
-
-
-    @patch.object(BestFightOddsScraper, "worker_constructor_target", side_effect=mock_worker_constructor)
-    def test_scrape_BFO_odds(self, mock_constructor) -> None:
+    @patch.object(
+        BestFightOddsScraper,
+        "worker_constructor_target",
+        side_effect=mock_worker_constructor,
+    )
+    def test_scrape_BFO_odds(self, mock_constructor: Mock) -> None:
         import sys
+
         logging.basicConfig(
             stream=sys.stdout,
             level="INFO",
@@ -324,10 +362,12 @@ class TestOddsScraper(unittest.TestCase):
                     .splitlines()
                 ),
                 sorted(
-                    Path(THIS_DIR / f"test_files/{file}_partial.csv").read_text().splitlines()
+                    Path(THIS_DIR / f"test_files/{file}_partial.csv")
+                    .read_text()
+                    .splitlines()
                 ),
             )
-        
+
         self.scraper.load_data()
         self.scraper.fighter_names.load_data()
         # Iterate again to complete the missing ones

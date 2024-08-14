@@ -41,6 +41,7 @@ class BestFightOddsScraper(BaseScraper):
     n_sessions = 1  # New default value
     min_score = 90
     max_exception_retries = 3
+    wait_time = 20
     web_url = "https://www.bestfightodds.com"
 
     def __init__(
@@ -265,7 +266,7 @@ class BestFightOddsScraper(BaseScraper):
         List[int | None],
     ]:
         # Wait for profile table to be there
-        element = WebDriverWait(driver, 60).until(
+        element = WebDriverWait(driver, cls.wait_time).until(
             element_present_in_list(
                 (By.CLASS_NAME, "team-stats-table"),
                 (By.ID, "hfmr8")
@@ -368,7 +369,7 @@ class BestFightOddsScraper(BaseScraper):
             time.sleep(5)
 
         # Three possible outputs
-        element = WebDriverWait(driver, 60).until(
+        element = WebDriverWait(driver, self.wait_time).until(
             element_present_in_list(
                 (By.CLASS_NAME, "content-list"),  # Search result
                 (By.CLASS_NAME, "team-stats-table"),  # Direct redirect to fighter page
@@ -466,13 +467,13 @@ class BestFightOddsScraper(BaseScraper):
         fighter_names_aggregated = fighter_names_aggregated.pivot(
             index="fighter_id", columns="database", values=["name", "database_id"]
         )
-        fighter_names_aggregated.columns = [
+        fighter_names_aggregated.columns = pd.Index([
             f"{col[1]}_{col[0]}" for col in fighter_names_aggregated.columns
-        ]
-        fighter_names_aggregated.columns = [
+        ])
+        fighter_names_aggregated.columns = pd.Index([
             col + "s" if col != "fighter_id" else col
             for col in fighter_names_aggregated.columns
-        ]
+        ])
 
         # Finally this have columns # fighter_id, BestFightOdds_names, UFCStats_names, BestFightOdds_database_ids, UFCStats_database_ids
         fighter_names_aggregated = fighter_names_aggregated.reset_index()
@@ -597,7 +598,7 @@ class BestFightOddsScraper(BaseScraper):
             group = group[~group["BFO_database_ids"].isna()]
 
             if len(group) > 0:
-                ids.append(fighter_id)
+                ids.append(str(fighter_id))
                 bfo_ids.append(group["BFO_database_ids"].values[0])
                 
                 bfo_names = group["BFO_names"].values[0]
@@ -680,7 +681,7 @@ class BestFightOddsScraper(BaseScraper):
                             # Iterate to find the position of the match
                             # date and name
                             for best_index, (date_, name_) in enumerate(zip(dates, opponents_BFO_names)):
-                                if date == date_ and name_ == best_name:
+                                if (abs((date - date_).days) <= 1.5) and name_ == best_name:
                                     break
                             else:
                                 # Unable to find, let's set the score to 0

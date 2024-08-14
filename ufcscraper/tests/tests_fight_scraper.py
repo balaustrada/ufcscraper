@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 from shutil import copy, rmtree
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import bs4
 import requests
@@ -114,8 +114,8 @@ class TestFightScraper(unittest.TestCase):
 
         for error in [
             "ERROR:ufcscraper.fight_scraper:Error saving data from url: http://"
-            "www.example.com/fight-details/fight7fail\nError: 'NoneType' object "
-            "has no attribute 'select'",
+            "www.example.com/fight-details/fight7fail\nError: Couldn't find "
+            "header in the soup.",
         ]:
             self.assertIn(error, cm.output)
 
@@ -166,15 +166,19 @@ class TestFightScraper(unittest.TestCase):
             self.scraper.url_from_id("fight1"),
         )
 
-        win_lose = [Mock(), Mock()]
+        win_lose = MagicMock()
+        win_lose.__iter__.return_value = iter([Mock(), Mock()])
+        win_lose.__len__.return_value = 2
         win_lose[0].text = "D"
         win_lose[1].text = "D"
         self.assertEqual(
             "Draw",
-            self.scraper.get_winner("a", "b", win_lose),
+            self.scraper.get_winner("a", "b", win_lose)
         )
 
-        win_lose = [Mock(), Mock()]
+        win_lose = MagicMock()
+        win_lose.__iter__.return_value = iter([Mock(), Mock()])
+        win_lose.__len__.return_value = 2
         win_lose[0].text = "C"
         win_lose[1].text = "L"
         self.assertEqual(
@@ -182,14 +186,19 @@ class TestFightScraper(unittest.TestCase):
             self.scraper.get_winner("a", "b", win_lose),
         )
 
-        fight_type = [Mock(), Mock()]
+        fight_type = MagicMock()
+        fight_type.__iter__.return_value = iter([Mock(), Mock()])
+        fight_type.__len__.return_value = 2
         fight_type[0].text = "MIddlewieght Title"
         self.assertEqual(
             "T",
             self.scraper.get_title_fight(fight_type),
         )
 
-        overview = [Mock() for i in range(2)]
+        overview = MagicMock()
+        overview.__iter__.return_value = iter([Mock() for i in range(3)])
+        overview.__len__.return_value = 2
+        overview[3].text = "f"
         self.assertEqual(
             "NULL",
             self.scraper.get_referee(overview),
