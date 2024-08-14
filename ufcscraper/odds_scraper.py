@@ -614,6 +614,8 @@ class BestFightOddsScraper(BaseScraper):
         #################
         fighters_scraped = 0
         fighters_to_scrape = len(ids)
+        records_added = 0
+        records_to_add = len(data_to_scrape)
 
         result_queue, task_queue, workers = self.get_parallel_odds_from_profile_urls(
             ids, search_names, bfo_ids,
@@ -718,9 +720,10 @@ class BestFightOddsScraper(BaseScraper):
                                     f"{row['UFC_names'][0]} on {date}"
                                 )
 
+                    records_added += fighter_records
                     logger.info(
                         f"{fighters_scraped} out of {fighters_to_scrape} fighters."
-                        f"\n\t{fighter_records} records added"
+                        f"\n\t{records_added} out of {records_to_add} records added."
                     )
 
                     # Check if the valid names are already in the database and if not, add them
