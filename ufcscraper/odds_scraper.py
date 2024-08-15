@@ -1,3 +1,23 @@
+"""
+This module provides tools for scraping, managing, and processing UFC fight Odds
+obtained from BestFightOdds (BFO)..
+
+Classes:
+--------
+
+- `BestFightOddsScraper`:
+    This class handles the process of scraping betting odds from the Best Fight Odds 
+    (BFO) website. It is designed to work iteratively, continually checking for and 
+    updating missing fighter records by checking data from UFCStats. The results are 
+    then stored and organized for further analysis.
+
+- `FighterNames`:
+    This class is responsible for managing the records of UFC fighters, including
+    their IDs, names, and associated database identifiers from different sources.
+    It is filled at the same time as the odds data is scraped and facilitates
+    the completeness of the scraping process. The class also handles the storage 
+    of this data.
+"""
 from __future__ import annotations
 
 import csv

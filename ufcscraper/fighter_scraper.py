@@ -1,5 +1,13 @@
 """
-    Module to scrape and handle fighter data
+This module defines a `FighterScraper` class for scraping and processing fighter
+data from UFCStats.
+
+The `FighterScraper` class inherits from the `BaseScraper` class and is designed
+to retrieve detailed information about UFC fighters, including personal details, 
+physical attributes, and fight records. The scraped data is processed and saved 
+into a CSV file for later analysis. The module also provides methods for parsing 
+and converting specific attributes like height, weight, reach, and more from the
+scraped HTML content.
 """
 
 from __future__ import annotations
