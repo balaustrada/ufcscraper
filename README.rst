@@ -13,6 +13,9 @@ UFC Scraper
 .. image:: https://coveralls.io/repos/github/balaustrada/ufcscraper/badge.svg?branch=main
     :target: https://coveralls.io/github/balaustrada/ufcscraper?branch=main
 
+.. image:: https://github.com/balaustrada/ufcscraper/actions/workflows/mypy.yml/badge.svg
+   :target: https://github.com/balaustrada/ufcscraper/actions/workflows/mypy.yml
+
 This project is a data scraper designed to collect and process fight statistics and betting odds for UFC events. It is composed of two parts:
 
 1. **Scraping UFC Statistics**: Data from events, fights, and fighters is scraped from `UFC stats <http://ufcstats.com/>`_ and stored in CSV format.
