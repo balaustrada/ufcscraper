@@ -43,3 +43,17 @@ Once installed, there are two entry points to be used for scraping data:
 
 * ``ufcscraper_scrape_ufcstats_data``: Scrape information from UFC stats.
 * ``ufcscraper_scrape_bestfightodds_data``: Scrape information from BestFightOdds.
+
+Credits
+========
+
+The methods for scraping UFC stats data are derived from the ones in `https://github.com/remypereira99/UFC-Web-Scraping <https://github.com/remypereira99/UFC-Web-Scraping>`_.
+
+Disclaimer
+===========
+
+This repository is for educational purposes only. The author does not promote, encourage, support, or excite any illegal activity or hacking without written permission. The author and this repository are not responsible for any misuse of the information provided.
+
+The "UFC Scraper" is merely the name of this project and does not represent a tool for any illegal activity. The software and scripts provided in this repository should only be used for educational purposes. The author cannot be held responsible for any misuse by users.
+
+The author is not responsible for any direct or indirect damage caused due to the use of the code provided in this repository. All the information provided here is for educational purposes only.
