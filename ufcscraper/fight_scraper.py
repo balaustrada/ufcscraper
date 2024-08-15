@@ -293,9 +293,9 @@ class FightScraper(BaseScraper):
         if fighter_1_result == "D" and fighter_2_result == "D":
             return "Draw"
         elif fighter_1_result == "W":
-            return fighter_2
-        elif fighter_2_result == "W":
             return fighter_1
+        elif fighter_2_result == "W":
+            return fighter_2
         else:
             return "NULL"
 
