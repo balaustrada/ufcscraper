@@ -10,6 +10,8 @@ UFC Scraper
 .. image:: https://readthedocs.org/projects/ufc-scraper/badge/?version=latest
    :target: https://ufc-scraper.readthedocs.io/en/latest/
 
+.. image:: https://coveralls.io/repos/github/balaustrada/ufcscraper/badge.svg?branch=main
+:target: https://coveralls.io/github/balaustrada/ufcscraper?branch=main
 
 This project is a data scraper designed to collect and process fight statistics and betting odds for UFC events. It is composed of two parts:
 
