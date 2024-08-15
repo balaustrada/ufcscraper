@@ -22,6 +22,7 @@ dependencies = [
     "Requests",
     "selenium",
     "urllib3",
+    "lxml",
 ]
 
 [project.scripts]
