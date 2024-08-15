@@ -22,7 +22,7 @@ dependencies = [
     "Requests",
     "selenium",
     "urllib3",
-    "lxml"
+    "lxml",
     "coverage",
 ]
 
