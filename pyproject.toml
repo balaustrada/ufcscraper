@@ -23,7 +23,6 @@ dependencies = [
     "selenium",
     "urllib3",
     "lxml",
-    "coverage",
 ]
 
 [project.scripts]

@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest
+        pip install flake8 coverage
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install .
     - name: Lint with flake8
@@ -37,7 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with unittest
       run: |
-        python -m coverage run --source ufcscraper unittest discover ufcscraper/tests
+        python -m coverage run --source ufcscraper -m unittest discover ufcscraper/tests
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v2.3.0
             
