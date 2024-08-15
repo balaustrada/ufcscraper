@@ -37,4 +37,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with unittest
       run: |
-        python -m unittest discover ufcscraper/tests
+        python -m coverage run --source ufcscraper unittest discover ufcscraper/tests
+    - name: Coveralls GitHub Action
+      uses: coverallsapp/github-action@v2.3.0
+            
