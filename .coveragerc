@@ -1,0 +1,4 @@
+[report]
+omit = 
+    ufcscraper/tests/*
+    ufcscraper/scripts/*
