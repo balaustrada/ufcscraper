@@ -668,7 +668,6 @@ class BestFightOddsScraper(BaseScraper):
             ]
         ]
 
-    @staticmethod
     def remove_scraped_records(self, data:pd.DataFrame) -> pd.DataFrame:
         """Remove records that have already been scraped.
 
