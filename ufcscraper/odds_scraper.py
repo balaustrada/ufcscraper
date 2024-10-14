@@ -742,7 +742,7 @@ class BestFightOddsScraper(BaseScraper):
 
             if len(candidates_indxs) == 0:
                 logger.info(
-                    f"Unable to find opponent {row["opponent_UFC_names"][0]} for "
+                    f"Unable to find opponent {row['opponent_UFC_names'][0]} for "
                     f"{row['UFC_names'][0]} on {date}"
                 )
             else:
