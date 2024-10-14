@@ -18,6 +18,7 @@ Classes:
     the completeness of the scraping process. The class also handles the storage 
     of this data.
 """
+
 from __future__ import annotations
 
 import csv
@@ -41,7 +42,7 @@ from ufcscraper.base import BaseScraper, BaseFileHandler
 from ufcscraper.ufc_scraper import UFCScraper
 from ufcscraper.utils import element_present_in_list, parse_date
 
-if TYPE_CHECKING: # pragma: no cover
+if TYPE_CHECKING:  # pragma: no cover
     import datetime
     from typing import Any, Callable, List, Optional, Set, Tuple
 
@@ -51,16 +52,17 @@ logger = logging.getLogger(__name__)
 class BestFightOddsScraper(BaseScraper):
     """A scraper for Best Fight Odds data.
 
-    This class is responsible for scraping betting odds data for fighters 
-    from Best Fight Odds. It supports parallel processing to speed up 
+    This class is responsible for scraping betting odds data for fighters
+    from Best Fight Odds. It supports parallel processing to speed up
     the scraping process and handles captcha detection (not solving).
 
     Attributes:
         min_score: Minimum score for matching fighter names.
-        max_exception_retries: Maximum number of retries for failed 
+        max_exception_retries: Maximum number of retries for failed
             requests.
         wait_time: Time to wait for elements to load.
     """
+
     columns: List[str] = [
         "fight_id",
         "fighter_id",
@@ -86,7 +88,7 @@ class BestFightOddsScraper(BaseScraper):
     ):
         """Initialize the BestFightOddsScraper.
 
-        It extends the BaseScraper class by adding score for 
+        It extends the BaseScraper class by adding score for
         naming matching, date filtering and initializes fighter_names
         class correspondent to the data_folder.
 
@@ -122,8 +124,8 @@ class BestFightOddsScraper(BaseScraper):
         return search_url
 
     @staticmethod
-    def captcha_indicator(driver: webdriver.Chrome) -> bool: # pragma: no cover
-        """ Check if there is a captcha.
+    def captcha_indicator(driver: webdriver.Chrome) -> bool:  # pragma: no cover
+        """Check if there is a captcha.
 
         Args:
             driver: The web driver instance.
@@ -153,9 +155,10 @@ class BestFightOddsScraper(BaseScraper):
             method: Method to be used by worker function.
 
         Returns:
-            A worker function that processes tasks from a queue and puts 
+            A worker function that processes tasks from a queue and puts
                 results in another queue.
         """
+
         def worker(
             task_queue: multiprocessing.Queue,
             result_queue: multiprocessing.Queue,
@@ -226,8 +229,8 @@ class BestFightOddsScraper(BaseScraper):
             driver: The web driver instance.
 
         Returns:
-            Tuple containing lists of dates, fighter IDs, fighter names, 
-            opponent IDs, opponent names, opening odds, closing range 
+            Tuple containing lists of dates, fighter IDs, fighter names,
+            opponent IDs, opponent names, opening odds, closing range
             mins, and closing range maxs.
         """
         if driver is None:
@@ -292,7 +295,9 @@ class BestFightOddsScraper(BaseScraper):
         fighters_id: List[str],
         fighters_search_names: List[Set[str]],
         fighters_BFO_ids: List[Set[str]],
-    ) -> Tuple[multiprocessing.Queue, multiprocessing.Queue, List[multiprocessing.Process]]:
+    ) -> Tuple[
+        multiprocessing.Queue, multiprocessing.Queue, List[multiprocessing.Process]
+    ]:
         """Scrape odds data in parallel from fighter profile URLs.
 
         Args:
@@ -301,9 +306,9 @@ class BestFightOddsScraper(BaseScraper):
             fighters_BFO_ids: BestFightOdds known IDs for each fighter.
 
         Returns:
-            Tuple containing result queue, task queue, and list of worker 
+            Tuple containing result queue, task queue, and list of worker
             processes.
-        """        
+        """
         task_queue: multiprocessing.Queue = multiprocessing.Queue()
         result_queue: multiprocessing.Queue = multiprocessing.Queue()
 
@@ -356,18 +361,19 @@ class BestFightOddsScraper(BaseScraper):
             driver: The web driver instance.
 
         Returns:
-            Tuple containing fighter name, dates, opponent names, opponent 
+            Tuple containing fighter name, dates, opponent names, opponent
             IDs, opening odds, closing range mins, and closing range maxs.
         """
         # Wait for profile table to be there
         element = WebDriverWait(driver, cls.wait_time).until(
             element_present_in_list(
-                (By.CLASS_NAME, "team-stats-table"),
-                (By.ID, "hfmr8")
+                (By.CLASS_NAME, "team-stats-table"), (By.ID, "hfmr8")
             )
-        )[0] # type: ignore[index]
+        )[
+            0
+        ]  # type: ignore[index]
 
-        if element.get_attribute("id") == "hfmr8": # pragma: no cover
+        if element.get_attribute("id") == "hfmr8":  # pragma: no cover
             while BestFightOddsScraper.captcha_indicator(driver):
                 logging.warning("Human recognition page detected, stalling...")
                 time.sleep(5)
@@ -392,7 +398,7 @@ class BestFightOddsScraper(BaseScraper):
         closing_range_min = []
         closing_range_max = []
 
-        fighter_name:str = rows_f[0].select_one("a").get_text(strip=True)
+        fighter_name: str = rows_f[0].select_one("a").get_text(strip=True)
 
         for row_f, row_s in zip(rows_f, rows_s):
             date_string = row_s.find(class_="item-non-mobile").text
@@ -463,7 +469,7 @@ class BestFightOddsScraper(BaseScraper):
             driver: The web driver instance.
 
         Returns:
-            Tuple containing the profile URL and profile ID, or None if 
+            Tuple containing the profile URL and profile ID, or None if
             not found.
         """
         url = self.create_search_url(search_fighter)
@@ -482,9 +488,11 @@ class BestFightOddsScraper(BaseScraper):
                 (By.CSS_SELECTOR, "p"),  # No results found.
                 (By.ID, "hfmr8"),  # Captcha
             )
-        )[0] # type: ignore[index]
+        )[
+            0
+        ]  # type: ignore[index]
 
-        if element.get_attribute("id") == "hfmr8": # pargma: no cover
+        if element.get_attribute("id") == "hfmr8":  # pargma: no cover
             while self.captcha_indicator(driver):
                 logging.warning("Human recognition page detected, stalling..")
                 time.sleep(5)
@@ -527,7 +535,7 @@ class BestFightOddsScraper(BaseScraper):
         return None
 
     def get_ufcstats_data(self) -> pd.DataFrame:
-        """ Load UFCStats data.
+        """Load UFCStats data.
 
         Mixes all the data from the scraped UFCStats website to create
         a dataframe where each row corresponds to a single fight,fighter
@@ -564,7 +572,7 @@ class BestFightOddsScraper(BaseScraper):
             on="event_id",
             how="left",
         )[["fight_id", "event_id", "fighter_id", "opponent_id", "event_date"]]
-        
+
         data["event_date"] = pd.to_datetime(data["event_date"])
         logger.info("Applying date mask...")
         logger.info(f"Previous size: {len(data)}")
@@ -584,13 +592,15 @@ class BestFightOddsScraper(BaseScraper):
         fighter_names_aggregated = fighter_names_aggregated.pivot(
             index="fighter_id", columns="database", values=["name", "database_id"]
         )
-        fighter_names_aggregated.columns = pd.Index([
-            f"{col[1]}_{col[0]}" for col in fighter_names_aggregated.columns
-        ])
-        fighter_names_aggregated.columns = pd.Index([
-            col + "s" if col != "fighter_id" else col
-            for col in fighter_names_aggregated.columns
-        ])
+        fighter_names_aggregated.columns = pd.Index(
+            [f"{col[1]}_{col[0]}" for col in fighter_names_aggregated.columns]
+        )
+        fighter_names_aggregated.columns = pd.Index(
+            [
+                col + "s" if col != "fighter_id" else col
+                for col in fighter_names_aggregated.columns
+            ]
+        )
 
         # Finally this have columns # fighter_id, BestFightOdds_names, UFCStats_names, BestFightOdds_database_ids, UFCStats_database_ids
         fighter_names_aggregated = fighter_names_aggregated.reset_index()
@@ -636,16 +646,12 @@ class BestFightOddsScraper(BaseScraper):
         for col in "BFO_names", "UFC_names", "BFO_database_ids", "UFC_database_ids":
             data[col] = (
                 data[col]
-                .apply(
-                    lambda x: [] if not isinstance(x, list) and pd.isna(x) else x
-                )
+                .apply(lambda x: [] if not isinstance(x, list) and pd.isna(x) else x)
                 .values
             )
             data["opponent_" + col] = (
                 data["opponent_" + col]
-                .apply(
-                    lambda x: [] if not isinstance(x, list) and pd.isna(x) else x
-                )
+                .apply(lambda x: [] if not isinstance(x, list) and pd.isna(x) else x)
                 .values
             )
 
@@ -668,7 +674,7 @@ class BestFightOddsScraper(BaseScraper):
             ]
         ]
 
-    def remove_scraped_records(self, data:pd.DataFrame) -> pd.DataFrame:
+    def remove_scraped_records(self, data: pd.DataFrame) -> pd.DataFrame:
         """Remove records that have already been scraped.
 
         Args:
@@ -679,7 +685,7 @@ class BestFightOddsScraper(BaseScraper):
         """
         return (
             data.merge(
-                self.data, # This is the class data.
+                self.data,  # This is the class data.
                 on=["fight_id", "fighter_id"],
                 indicator=True,
                 how="outer",
@@ -694,10 +700,11 @@ class BestFightOddsScraper(BaseScraper):
                 ]
             )
         )
-    
-    def extract_valid_fights_from_odds_data(self, 
+
+    def extract_valid_fights_from_odds_data(
+        self,
         fighter_missing_data: pd.DataFrame,
-        odds_data: Tuple,  
+        odds_data: Tuple,
     ) -> Tuple[List[List[str]], Set[Tuple[str, str, str]]]:
         """Extract valid fights from odds data.
 
@@ -727,7 +734,16 @@ class BestFightOddsScraper(BaseScraper):
                 - odds_records: List of valid odds records.
                 - BFO_names: Set of tuples with BFO IDs and names.
         """
-        dates, fighter_BFO_ids, fighter_BFO_names, opponents_BFO_ids, opponents_BFO_names, openings, closing_range_mins, closing_range_maxs = odds_data
+        (
+            dates,
+            fighter_BFO_ids,
+            fighter_BFO_names,
+            opponents_BFO_ids,
+            opponents_BFO_names,
+            openings,
+            closing_range_mins,
+            closing_range_maxs,
+        ) = odds_data
 
         BFO_names: Set[Tuple[str, str, str]] = set()
         odds_records: List[List[str]] = []
@@ -746,9 +762,7 @@ class BestFightOddsScraper(BaseScraper):
                     f"{row['UFC_names'][0]} on {date}"
                 )
             else:
-                possible_opponents = [
-                    opponents_BFO_names[i] for i in candidates_indxs
-                ]
+                possible_opponents = [opponents_BFO_names[i] for i in candidates_indxs]
 
                 scores = [
                     process.extractOne(
@@ -760,10 +774,12 @@ class BestFightOddsScraper(BaseScraper):
                 ]
 
                 best_name, score = max(scores, key=lambda x: x[1])
-                
+
                 # Iterate to find the position of the match
                 # date and name
-                for best_index, (date_, name_) in enumerate(zip(dates, opponents_BFO_names)):
+                for best_index, (date_, name_) in enumerate(
+                    zip(dates, opponents_BFO_names)
+                ):
                     if (abs((date - date_).days) <= 1.5) and name_ == best_name:
                         break
                 else:
@@ -797,12 +813,11 @@ class BestFightOddsScraper(BaseScraper):
                     )
                 else:
                     logger.info(
-                        f"Unable to find opponent {row["opponent_UFC_names"][0]} for "
+                        f"Unable to find opponent {row['opponent_UFC_names'][0]} for "
                         f"{row['UFC_names'][0]} on {date}."
                     )
-        
+
         return odds_records, BFO_names
-        
 
     def scrape_BFO_odds(self) -> None:
         """Scrape Best Fight Odds (BFO) and update records.
@@ -848,7 +863,7 @@ class BestFightOddsScraper(BaseScraper):
             if len(group) > 0:
                 ids.append(str(fighter_id))
                 bfo_ids.append(group["BFO_database_ids"].values[0])
-                
+
                 bfo_names = group["BFO_names"].values[0]
 
                 if bfo_names == []:
@@ -856,8 +871,7 @@ class BestFightOddsScraper(BaseScraper):
                     search_names.append(group["UFC_names"].values[0])
                 else:
                     search_names.append(None)
-                
-                
+
         #################
         # Scrape data
         #################
@@ -867,7 +881,9 @@ class BestFightOddsScraper(BaseScraper):
         records_to_add = len(data_to_scrape)
 
         result_queue, task_queue, workers = self.get_parallel_odds_from_profile_urls(
-            ids, search_names, bfo_ids,
+            ids,
+            search_names,
+            bfo_ids,
         )
         with (
             open(self.data_file, "a") as f_odds,
@@ -910,7 +926,7 @@ class BestFightOddsScraper(BaseScraper):
                     logger.info(
                         f"{fighters_scraped} out of {fighters_to_scrape} fighters - Error"
                     )
-        
+
         for _ in range(self.n_sessions):
             task_queue.put(None)
 
@@ -929,15 +945,14 @@ class BestFightOddsScraper(BaseScraper):
             logger.info("0 records scraped, unable to add more by rerunning scraping.")
 
 
-
-
 class FighterNames(BaseFileHandler):
     """A class to manage and handle fighter names and their associated data.
 
-    This class is responsible for loading and checking records of fighters 
-    from various data sources. It manages the storage of fighter information, 
-    including IDs, names, and database identifiers. 
+    This class is responsible for loading and checking records of fighters
+    from various data sources. It manages the storage of fighter information,
+    including IDs, names, and database identifiers.
     """
+
     columns: List[str] = [
         "fighter_id",
         "database",
@@ -979,7 +994,9 @@ class FighterNames(BaseFileHandler):
             logger.info("Reloading data after adding missing records")
             self.load_data()
 
-    def fighter_in_database(self, fighter_id: str, database: str, name: str, database_id: str) -> bool:
+    def fighter_in_database(
+        self, fighter_id: str, database: str, name: str, database_id: str
+    ) -> bool:
         """Check if a fighter is present in the database.
 
         Args:
