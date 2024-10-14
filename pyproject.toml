@@ -19,6 +19,7 @@ dependencies = [
     "fuzzywuzzy",
     "pandas",
     "python_dateutil",
+    "python-Levenshtein",
     "Requests",
     "selenium",
     "urllib3",
