@@ -944,6 +944,9 @@ class BestFightOddsScraper(BaseScraper):
         else:
             logger.info("0 records scraped, unable to add more by rerunning scraping.")
 
+        logger.info("Removing duplicates from fighter_names.csv...")
+        self.fighter_names.remove_duplicates_from_file()
+
 
 class FighterNames(BaseFileHandler):
     """A class to manage and handle fighter names and their associated data.
