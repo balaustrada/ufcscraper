@@ -24,7 +24,7 @@ from ufcscraper.utils import links_to_soups
 
 if TYPE_CHECKING:  # pragma: no cover
     import bs4
-    from typing import List
+    from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -36,22 +36,23 @@ class FighterScraper(BaseScraper):
     personal information, physical attributes, and fight records. The data
     is saved to a CSV file for further analysis.
     """
-    columns: List[str] = [
-        "fighter_id",
-        "fighter_f_name",
-        "fighter_l_name",
-        "fighter_nickname",
-        "fighter_height_cm",
-        "fighter_weight_lbs",
-        "fighter_reach_cm",
-        "fighter_stance",
-        "fighter_dob",
-        "fighter_w",
-        "fighter_l",
-        "fighter_d",
-        "fighter_nc_dq",
-    ]
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type] = {
+        "fighter_id": str,
+        "fighter_f_name": str,
+        "fighter_l_name": str,
+        "fighter_nickname": str,
+        "fighter_height_cm": float,
+        "fighter_weight_lbs": float,
+        "fighter_reach_cm": float,
+        "fighter_stance": str,
+        "fighter_dob": str,
+        "fighter_w": pd.Int64Dtype(),
+        "fighter_l": pd.Int64Dtype(),
+        "fighter_d": pd.Int64Dtype(),
+        "fighter_nc_dq": pd.Int64Dtype(),
+    }
+    sort_fields = ["fighter_l_name", "fighter_f_name", "fighter_id"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "fighter_data.csv"
 
     @classmethod
@@ -107,7 +108,7 @@ class FighterScraper(BaseScraper):
                     l = record[1]
                     d = record[-1][0] if len(record[-1]) > 1 else record[-1]
                     nc_dq = (
-                        record[-1].split("(")[-1][0] if len(record[-1]) > 1 else "NULL"
+                        record[-1].split("(")[-1][0] if len(record[-1]) > 1 else ""
                     )
 
                     writer.writerow(
@@ -131,6 +132,8 @@ class FighterScraper(BaseScraper):
                     logger.info(f"Scraped {i+1}/{len(urls_to_scrape)} fighters...")
                 except Exception as e:
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
+
+        self.remove_duplicates_from_file()
 
     def add_name_column(self) -> None:
         """
@@ -179,18 +182,18 @@ class FighterScraper(BaseScraper):
             name: List of name parts.
 
         Returns:
-            The parsed last name, or "NULL" if it cannot be determined.
+            The parsed last name, or "" if it cannot be determined.
         """
         if len(name) == 2:
             return name[-1]
         elif len(name) == 1:
-            return "NULL"
+            return ""
         elif len(name) == 3:
             return name[-2] + " " + name[-1]
         elif len(name) == 4:
             return name[-3] + " " + name[-2] + " " + name[-1]
         else:
-            return "NULL"
+            return ""
 
     @staticmethod
     def parse_nickname(nickname: bs4.element.Tag) -> str:
@@ -201,10 +204,10 @@ class FighterScraper(BaseScraper):
             nickname: BeautifulSoup tag containing the nickname.
 
         Returns:
-            The parsed nickname, or "NULL" if not available.
+            The parsed nickname, or "" if not available.
         """
         if nickname.text == "\n":
-            return "NULL"
+            return ""
         else:
             return nickname.text.strip()
 
@@ -217,11 +220,11 @@ class FighterScraper(BaseScraper):
             height: BeautifulSoup tag containing the height in feet and inches.
 
         Returns:
-            The height in centimeters, or "NULL" if not available.
+            The height in centimeters, or "" if not available.
         """
         height_text = height.text.split(":")[1].strip()
         if "--" in height_text.split("'"):
-            return "NULL"
+            return ""
         else:
             height_ft = int(height_text[0])
             height_in = int(height_text.split("'")[1].strip().strip('"'))
@@ -237,11 +240,11 @@ class FighterScraper(BaseScraper):
             reach: BeautifulSoup tag containing the reach in inches.
 
         Returns:
-            The reach in centimeters, or "NULL" if not available.
+            The reach in centimeters, or "" if not available.
         """
         reach_text = reach.text.split(":")[1]
         if "--" in reach_text:
-            return "NULL"
+            return ""
         else:
             return str(round(int(reach_text.strip().strip('"')) * 2.54, 2))
 
@@ -254,11 +257,11 @@ class FighterScraper(BaseScraper):
             weight_element: BeautifulSoup tag containing the weight.
 
         Returns:
-            The weight in pounds, or "NULL" if not available.
+            The weight in pounds, or "" if not available.
         """
         weight_text = weight_element.text.split(":")[1]
         if "--" in weight_text:
-            return "NULL"
+            return ""
         else:
             return weight_text.split()[0].strip()
 
@@ -271,11 +274,11 @@ class FighterScraper(BaseScraper):
             stance: BeautifulSoup tag containing the stance.
 
         Returns:
-            The stance, or "NULL" if not available.
+            The stance, or "" if not available.
         """
         stance_text = stance.text.split(":")[1]
         if stance_text == "":
-            return "NULL"
+            return ""
         else:
             return stance_text.strip()
 
@@ -288,10 +291,10 @@ class FighterScraper(BaseScraper):
             dob: BeautifulSoup tag containing the date of birth.
 
         Returns:
-            The date of birth in YYYY-MM-DD format, or "NULL" if not available.
+            The date of birth in YYYY-MM-DD format, or "" if not available.
         """
         dob_text = dob.text.split(":")[1].strip()
         if dob_text == "--":
-            return "NULL"
+            return ""
         else:
             return str(datetime.datetime.strptime(dob_text, "%b %d, %Y"))[0:10]

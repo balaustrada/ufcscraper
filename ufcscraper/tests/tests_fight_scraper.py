@@ -177,7 +177,7 @@ class TestFightScraper(unittest.TestCase):
         win_lose[0].text = "C"
         win_lose[1].text = "L"
         self.assertEqual(
-            "NULL",
+            "",
             self.scraper.get_winner("a", "b", win_lose),
         )
 
@@ -195,7 +195,7 @@ class TestFightScraper(unittest.TestCase):
         overview.__len__.return_value = 2
         overview[3].text = "f"
         self.assertEqual(
-            "NULL",
+            "",
             self.scraper.get_referee(overview),
         )
 
@@ -205,9 +205,12 @@ class TestFightScraper(unittest.TestCase):
         fight_stats_select = soup.select("p.b-fight-details__table-text")
 
         self.assertEqual(
-            ("NULL",) * 22,
+            ("",) * 22,
             RoundsHandler.get_stats(fight_stats_select, 0, 0, 0),
         )
 
         with self.assertRaises(ValueError):
             RoundsHandler.get_stats(fight_stats_select, 2, 0, 2)
+
+if __name__ == "__main__":
+    unittest.main()

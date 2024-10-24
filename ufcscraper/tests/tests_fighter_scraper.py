@@ -134,17 +134,17 @@ class TestFighterScrape(unittest.TestCase):
                 ),
             ],
             [
-                "NULL",
+                "",
                 "Lastname",
                 "S Second",
                 "S Second Third",
-                "NULL",
+                "",
             ],
         )
 
         nickname = Mock()
         nickname.text = "\n"
-        self.assertEqual(self.scraper.parse_nickname(nickname), "NULL")
+        self.assertEqual(self.scraper.parse_nickname(nickname), "")
 
         nickname.text = "quantity:--"
         for x in (
@@ -153,10 +153,10 @@ class TestFighterScrape(unittest.TestCase):
             self.scraper.parse_weight,
             self.scraper.parse_dob,
         ):
-            self.assertEqual(x(nickname), "NULL")
+            self.assertEqual(x(nickname), "")
 
         nickname.text = "quantity:"
-        self.assertEqual(self.scraper.parse_stance(nickname), "NULL")
+        self.assertEqual(self.scraper.parse_stance(nickname), "")
 
     def test_use_existing_data(self) -> None:
         copy(
@@ -167,3 +167,6 @@ class TestFighterScrape(unittest.TestCase):
             self.scraper.check_data_file()
 
         self.assertIn("Using existing file", cm.output[0])
+
+if __name__ == "__main__":
+    unittest.main()

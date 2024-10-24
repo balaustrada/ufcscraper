@@ -1,7 +1,7 @@
 fighter_id,fighter_f_name,fighter_l_name,fighter_nickname,fighter_height_cm,fighter_weight_lbs,fighter_reach_cm,fighter_stance,fighter_dob,fighter_w,fighter_l,fighter_d,fighter_nc_dq
-fighter3,Max,Power,The Beast,190.5,220,195.58,Switch,1937-04-02,15,3,0,NULL
-fighter1,John,Doe,The Phantom,185.42,170,190.5,Orthodox,1936-04-20,13,2,0,NULL
-fighter4,Emily,Brown,The Tornado,170.18,140,177.8,Orthodox,2005-06-01,8,2,1,1
-fighter2,Jane,Smith,The Hammer,175.26,135,172.72,Southpaw,1937-04-01,12,1,0,NULL
-fighter5,Liam,Jones,The Dragon,182.88,185,182.88,Southpaw,1937-04-10,14,4,0,NULL
-fighter6,Sophia,Wilson,The Viper,167.64000000000001,125,165.1,Orthodox,1937-05-01,11,3,0,NULL
+fighter4,Emily,Brown,The Tornado,170.18,140.0,177.8,Orthodox,2005-06-01,8,2,1,1
+fighter1,John,Doe,The Phantom,185.42,170.0,190.5,Orthodox,1936-04-20,13,2,0,
+fighter5,Liam,Jones,The Dragon,182.88,185.0,182.88,Southpaw,1937-04-10,14,4,0,
+fighter3,Max,Power,The Beast,190.5,220.0,195.58,Switch,1937-04-02,15,3,0,
+fighter2,Jane,Smith,The Hammer,175.26,135.0,172.72,Southpaw,1937-04-01,12,1,0,
+fighter6,Sophia,Wilson,The Viper,167.64,125.0,165.1,Orthodox,1937-05-01,11,3,0,
