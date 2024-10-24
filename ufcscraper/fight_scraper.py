@@ -31,7 +31,7 @@ from ufcscraper.utils import links_to_soups
 
 if TYPE_CHECKING:  # pragma: no cover
     import bs4
-    from typing import Any, List, Tuple
+    from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -45,24 +45,27 @@ class FightScraper(BaseScraper):
     rounds (through the companion class `RoundsHandler`).
     """
 
-    columns: List[str] = [
-        "fight_id",
-        "event_id",
-        "referee",
-        "fighter_1",
-        "fighter_2",
-        "winner",
-        "num_rounds",
-        "title_fight",
-        "weight_class",
-        "gender",
-        "result",
-        "result_details",
-        "finish_round",
-        "finish_time",
-        "time_format",
-    ]
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
+        "fight_id": str,
+        "event_id": str,
+        "referee": str,
+        "fighter_1": str,
+        "fighter_2": str,
+        "winner": str,
+        "num_rounds": pd.Int64Dtype(),
+        "title_fight": str,
+        "weight_class": str,
+        "gender": str,
+        "result": str,
+        "result_details": str,
+        "finish_round": pd.Int64Dtype(),
+        "finish_time": str,
+        "time_format": str,
+        "scores_1": pd.Int64Dtype(),
+        "scores_2": pd.Int64Dtype(),
+    }
+    sort_fields = ["event_id", "fight_id"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "fight_data.csv"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -89,7 +92,7 @@ class FightScraper(BaseScraper):
         return f"{cls.web_url}/fight-details/{id_}"
 
     def scrape_fights(self, get_all_events: bool = False) -> None:
-        """ Scrapes fight data and saves it to CSV files.
+        """Scrapes fight data and saves it to CSV files.
 
         This method scrapes fight details and round statistics. It saves the
         fight details and round statistics to separate CSV files.
@@ -135,6 +138,7 @@ class FightScraper(BaseScraper):
                     referee = self.get_referee(overview)
                     fighter_1, fighter_2 = self.get_fighters(fight_details, soup)
                     num_rounds = overview[2].text.split(":")[1].strip()[0].strip()
+                    num_rounds = str(int(num_rounds)) if num_rounds != "N" else ""
                     title_fight = self.get_title_fight(fight_type)
                     weight_class = self.get_weight_class(fight_type)
                     gender = self.get_gender(fight_type)
@@ -146,6 +150,7 @@ class FightScraper(BaseScraper):
                     winner = self.get_winner(fighter_1, fighter_2, win_lose)
                     time_format = overview[2].text.split(":")[1].strip()
                     fight_id = self.id_from_url(url)
+                    scores_1, scores_2 = self.get_scores(overview, select_result)
 
                     # I am saving first the rounds and then the fights
                     # in case of error the fight doesn't count as scraped
@@ -180,6 +185,8 @@ class FightScraper(BaseScraper):
                             finish_round,
                             finish_time.strip(),
                             time_format.strip(),
+                            scores_1,
+                            scores_2,
                         ]
                     )
 
@@ -187,8 +194,10 @@ class FightScraper(BaseScraper):
                 except Exception as e:
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
 
+        self.remove_duplicates_from_file()
+
     def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
-        """ Retrieves URLs of all fights from UFCStats.
+        """Retrieves URLs of all fights from UFCStats.
 
         Args:
             get_all_events: If False, only gets URLs for fights from events
@@ -232,12 +241,12 @@ class FightScraper(BaseScraper):
             overview: A ResultSet containing fight overview information.
 
         Returns:
-            The referee's name, or 'NULL' if not found.
+            The referee's name, or '' if not found.
         """
         try:
             return overview[3].text.split(":")[1]
         except:
-            return "NULL"
+            return ""
 
     @staticmethod
     def get_fighters(
@@ -276,7 +285,7 @@ class FightScraper(BaseScraper):
     def get_winner(
         fighter_1: str, fighter_2: str, win_lose: bs4.element.ResultSet
     ) -> str:
-        """ Determines the winner of the fight based on the win/lose status.
+        """Determines the winner of the fight based on the win/lose status.
 
         Args:
             fighter_1: The ID of the first fighter.
@@ -284,7 +293,7 @@ class FightScraper(BaseScraper):
             win_lose: A ResultSet containing win/lose status for the fighters.
 
         Returns:
-            The ID of the winner, or 'Draw' if it's a draw, or 'NULL' if not 
+            The ID of the winner, or 'Draw' if it's a draw, or '' if not
                 determined.
         """
         fighter_1_result = win_lose[0].text.strip()
@@ -297,7 +306,7 @@ class FightScraper(BaseScraper):
         elif fighter_2_result == "W":
             return fighter_2
         else:
-            return "NULL"
+            return ""
 
     # Checks if fight is title fight
     @staticmethod
@@ -324,7 +333,7 @@ class FightScraper(BaseScraper):
             fight_type: A ResultSet containing fight type information.
 
         Returns:
-            The weight class of the fight, or 'NULL' if not found.
+            The weight class of the fight, or '' if not found.
         """
         if "Light Heavyweight" in fight_type[0].text.strip():
             return "Light Heavyweight"
@@ -342,7 +351,7 @@ class FightScraper(BaseScraper):
             try:
                 return re.findall(r"\w*weight", fight_type[0].text.strip())[0]
             except:
-                return "NULL"
+                return ""
 
     # Checks gender of fight
     @staticmethod
@@ -387,6 +396,48 @@ class FightScraper(BaseScraper):
                 select_result_details[1].text.split(":")[-1],
             )
 
+    @staticmethod
+    def get_scores(
+        overview: bs4.element.ResultSet,
+        select_result: bs4.element.ResultSet,
+    ) -> Tuple[str, str]:
+        """
+        Extracts the scores of the fight if they the fight went the distance.
+
+        Args:
+            overview: A ResultSet containing the fight overview.
+            select_result: A ResultSet containing the fight result.
+
+        Returns:
+            A tuple with the scores of the fight. As str to be
+            written to the CSV file.
+
+        """
+        if "Decision" in select_result[0].text.split(":")[1]:
+            # Initialize a list to hold the extracted scores
+            scores = []
+
+            # Define the regex pattern for capturing the scores (e.g., 27 - 30, 28 - 29, etc.)
+            score_pattern = re.compile(r"(\d{1,2})\s*-\s*(\d{1,2})\.")
+
+            # Iterate over the selected elements and check for score patterns
+            for detail in overview:
+                text = detail.get_text(strip=True)
+                matches = score_pattern.findall(text)  # Find all matches in the text
+                for match in matches:
+                    scores.append(match)  # Append each found score to the list
+
+            if len(scores) > 0:
+                scores1 = 0
+                scores2 = 0
+                for s1, s2 in scores:
+                    scores1 += int(s1)
+                    scores2 += int(s2)
+
+                return str(scores1), str(scores2)
+
+        return "", ""
+
 
 class RoundsHandler(BaseFileHandler):
     """Handles the manipulation and storage of round statistics.
@@ -395,35 +446,36 @@ class RoundsHandler(BaseFileHandler):
     statistics, including strikes, takedowns, and control time. It formats
     and saves the data to a CSV file.
     """
-    columns: List[str] = [
-        "fight_id",
-        "fighter_id",
-        "round",
-        "knockdowns",
-        "strikes_att",  # If not stated otherwise they are significant
-        "strikes_succ",
-        "head_strikes_att",
-        "head_strikes_succ",
-        "body_strikes_att",
-        "body_strikes_succ",
-        "leg_strikes_att",
-        "leg_strikes_succ",
-        "distance_strikes_att",
-        "distance_strikes_succ",
-        "ground_strikes_att",
-        "ground_strikes_succ",
-        "clinch_strikes_att",
-        "clinch_strikes_succ",
-        "total_strikes_att",  # significant and not significant
-        "total_strikes_succ",
-        "takedown_att",
-        "takedown_succ",
-        "submission_att",
-        "reversals",
-        "ctrl_time",
-    ]
 
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
+        "fight_id": str,
+        "fighter_id": str,
+        "round": pd.Int64Dtype(),
+        "knockdowns": pd.Int64Dtype(),
+        "strikes_att": pd.Int64Dtype(),  # If not stated otherwise they are significant
+        "strikes_succ": pd.Int64Dtype(),
+        "head_strikes_att": pd.Int64Dtype(),
+        "head_strikes_succ": pd.Int64Dtype(),
+        "body_strikes_att": pd.Int64Dtype(),
+        "body_strikes_succ": pd.Int64Dtype(),
+        "leg_strikes_att": pd.Int64Dtype(),
+        "leg_strikes_succ": pd.Int64Dtype(),
+        "distance_strikes_att": pd.Int64Dtype(),
+        "distance_strikes_succ": pd.Int64Dtype(),
+        "ground_strikes_att": pd.Int64Dtype(),
+        "ground_strikes_succ": pd.Int64Dtype(),
+        "clinch_strikes_att": pd.Int64Dtype(),
+        "clinch_strikes_succ": pd.Int64Dtype(),
+        "total_strikes_att": pd.Int64Dtype(),  # significant and not significant
+        "total_strikes_succ": pd.Int64Dtype(),
+        "takedown_att": pd.Int64Dtype(),
+        "takedown_succ": pd.Int64Dtype(),
+        "submission_att": pd.Int64Dtype(),
+        "reversals": pd.Int64Dtype(),
+        "ctrl_time": str,
+    }
+    sort_fields = ["fight_id", "fighter_id", "round"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "round_data.csv"
 
     @staticmethod
@@ -441,7 +493,7 @@ class RoundsHandler(BaseFileHandler):
 
         Returns:
             A tuple of statistics for the specified fighter in the given round.
-            Returns "NULL" for all fields if an error occurs.
+            Returns "" for all fields if an error occurs.
 
         Raises:
             ValueError: If `fighter` is not 0 or 1.
@@ -485,4 +537,4 @@ class RoundsHandler(BaseFileHandler):
 
             return tuple(datum.strip() for datum in data)
         except:
-            return ("NULL",) * 22
+            return ("",) * 22

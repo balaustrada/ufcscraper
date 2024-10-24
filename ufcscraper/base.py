@@ -4,6 +4,7 @@ This module defines BaseFileHandler and BaseScraper classes,
 meant to be inherited by specific scraper or file handler 
 modules.
 """
+
 from __future__ import annotations
 
 import csv
@@ -16,7 +17,7 @@ import pandas as pd
 
 
 if TYPE_CHECKING:  # pragma: no cover
-    from typing import List, Optional
+    from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +26,20 @@ class BaseFileHandler(ABC):
     """Base class for file handlers associated with a CSV table.
 
     This class provides the basic functionality to manage data stored in a CSV
-    file. It handles checking the existence of the file, initializing it with 
-    columns if it's missing, removing duplicates, and loading the data into a 
+    file. It handles checking the existence of the file, initializing it with
+    columns if it's missing, removing duplicates, and loading the data into a
     pandas DataFrame.
 
     Attributes:
-        columns: The column names to be used in the CSV file. This should be 
-            defined in subclasses.
+        dtypes: A dictionary mapping column names to their data types.
+        sort_fields: A list of column names used for sorting the data.
         data_folder: The folder where the CSV file is stored.
         filename: The name of the CSV file. This should be defined in subclasses.
         data: A pandas DataFrame that holds the data loaded from the CSV file.
     """
-    columns: List[str]
+
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype]
+    sort_fields: List[str]
     data_folder: Path
     filename: str
 
@@ -49,14 +52,13 @@ class BaseFileHandler(ABC):
         """Initializes the BaseFileHandler with the specified data folder.
 
         Args:
-            data_folder (Path | str): The folder where the CSV file is stored 
+            data_folder (Path | str): The folder where the CSV file is stored
             or will be created.
         """
         self.data_folder = Path(data_folder)
         self.data_file: Path = Path(self.data_folder) / self.filename
 
         self.check_data_file()
-        self.remove_duplicates_from_file()
         self.load_data()
 
     def check_data_file(self) -> None:
@@ -68,7 +70,7 @@ class BaseFileHandler(ABC):
         if not self.data_file.is_file():
             with open(self.data_file, "w", newline="", encoding="UTF8") as f:
                 writer = csv.writer(f)
-                writer.writerow(self.columns)
+                writer.writerow(self.dtypes.keys())
 
             logger.info(f"Using new file:\n\t{self.data_file}")
         else:
@@ -80,7 +82,8 @@ class BaseFileHandler(ABC):
         This method reads the CSV file, removes any duplicate rows, and then
         saves the cleaned data back to the same file.
         """
-        data = pd.read_csv(self.data_file).drop_duplicates()
+        data = pd.read_csv(self.data_file, dtype=self.dtypes).drop_duplicates()
+        data = data.sort_values(by=self.sort_fields).reset_index(drop=True)
         data.to_csv(self.data_file, index=False)
 
     def load_data(self) -> None:
@@ -89,24 +92,25 @@ class BaseFileHandler(ABC):
         This method reads the CSV file, removes duplicates, and stores the data
         in the `data` attribute for further processing.
         """
-        self.data = pd.read_csv(self.data_file).drop_duplicates()
+        self.data = pd.read_csv(self.data_file, dtype=self.dtypes).drop_duplicates()
 
 
 class BaseScraper(BaseFileHandler):
     """Base class for web scrapers associated with a CSV file.
 
-    This class provides basic functionality for scraping data from specific 
+    This class provides basic functionality for scraping data from specific
     webs and storing it in a CSV file. It includes default settings for web
     scraping such as the base URL, the number of concurrent sessions, and
     the delay between requests.
-    
+
     Attributes:
         web_url: The base URL for the website to scrape.
         n_sessions: Number of concurrent sessions for scraping.
         delay: Delay between requests to avoid being blocked.
     """
+
     web_url: str = "http://www.ufcstats.com"
-    n_sessions: int = 1 # these are the defaults
+    n_sessions: int = 1  # these are the defaults
     delay: float = 0.1
 
     def __init__(

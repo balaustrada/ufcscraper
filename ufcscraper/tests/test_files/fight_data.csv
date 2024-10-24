@@ -1,7 +1,7 @@
-fight_id,event_id,referee,fighter_1,fighter_2,winner,num_rounds,title_fight,weight_class,gender,result,result_details,finish_round,finish_time,time_format
-fight5,event3,Referee 3,fighter4,fighter3,fighter3,3,F,Open Weight,M,Decision,Split,3,5:00,3 Rnd (5-5-5)
-fight4,event2,Referee 3,fighter1,fighter2,fighter2,5,F,NULL,M,KO/TKO,At Distance Knee injury,2,0:08,5 Rnd (5-5-5-5-5)
-fight1,event1,Referee 1,fighter1,fighter2,fighter2,5,F,Heavyweight,M,Submission,Rear Naked Choke,1,1:44,5 Rnd (5-5-5-5-5)
-fight2,event1,Referee 3,fighter3,fighter4,fighter3,3,F,Light Heavyweight,M,Decision,Unanimous,3,5:00,3 Rnd (5-5-5)
-fight6,event3,Referee 4,fighter5,fighter6,fighter6,3,F,Catch Weight,M,Decision,Unanimous,3,5:00,3 Rnd (5-5-5)
-fight3,event2,Referee 2,fighter5,fighter6,fighter5,5,F,Women's Bantamweight,F,Decision,Unanimous,5,5:00,5 Rnd (5-5-5-5-5)
+fight_id,event_id,referee,fighter_1,fighter_2,winner,num_rounds,title_fight,weight_class,gender,result,result_details,finish_round,finish_time,time_format,scores_1,scores_2
+fight3,event2,Referee 2,fighter5,fighter6,fighter5,5,F,Women's Bantamweight,F,Decision,Unanimous,5,5:00,5 Rnd (5-5-5-5-5),134,150
+fight5,event3,Referee 3,fighter4,fighter3,fighter3,3,F,Open Weight,M,Decision,Split,3,5:00,3 Rnd (5-5-5),85,86
+fight4,event2,Referee 3,fighter1,fighter2,fighter2,5,F,,M,KO/TKO,At Distance Knee injury,2,0:08,5 Rnd (5-5-5-5-5),,
+fight2,event1,Referee 3,fighter3,fighter4,fighter3,3,F,Light Heavyweight,M,Decision,Unanimous,3,5:00,3 Rnd (5-5-5),83,88
+fight1,event1,Referee 1,fighter1,fighter2,fighter2,5,F,Heavyweight,M,Submission,Rear Naked Choke,1,1:44,5 Rnd (5-5-5-5-5),,
+fight6,event3,Referee 4,fighter5,fighter6,fighter6,3,F,Catch Weight,M,Decision,Unanimous,3,5:00,3 Rnd (5-5-5),82,87

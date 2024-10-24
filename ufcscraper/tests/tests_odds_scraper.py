@@ -341,3 +341,6 @@ class TestOddsScraper(unittest.TestCase):
                     Path(THIS_DIR / f"test_files/{file}.csv").read_text().splitlines()
                 ),
             )
+
+if __name__ == "__main__":
+    unittest.main()

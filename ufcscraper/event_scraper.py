@@ -21,7 +21,7 @@ from ufcscraper.base import BaseScraper
 from ufcscraper.utils import link_to_soup, links_to_soups
 
 if TYPE_CHECKING:  # pragma: no cover
-    from typing import List
+    from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +34,16 @@ class EventScraper(BaseScraper):
     scraping functionality from `BaseScraper`.
     """
 
-    columns: List[str] = [
-        "event_id",
-        "event_name",
-        "event_date",
-        "event_city",
-        "event_state",
-        "event_country",
-    ]
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
+        "event_id": str,
+        "event_name": str,
+        "event_date": str,
+        "event_city": str,
+        "event_state": str,
+        "event_country": str,
+    }
+    sort_fields = ["event_date", "event_name"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "event_data.csv"
 
     @classmethod
@@ -95,7 +96,7 @@ class EventScraper(BaseScraper):
                     if len(full_location) > 2:
                         event_state = full_location[1]
                     else:
-                        event_state = "NULL"
+                        event_state = ""
 
                     writer.writerow(
                         [
@@ -111,6 +112,8 @@ class EventScraper(BaseScraper):
                     logger.info(f"Scraped {i+1}/{len(urls_to_scrape)} events...")
                 except Exception as e:
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
+
+        self.remove_duplicates_from_file()
 
     def get_event_urls(self) -> List[str]:
         """Retrieves the URLs of all completed events from UFCStats.

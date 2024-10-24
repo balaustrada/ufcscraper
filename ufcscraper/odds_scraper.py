@@ -44,7 +44,7 @@ from ufcscraper.utils import element_present_in_list, parse_date
 
 if TYPE_CHECKING:  # pragma: no cover
     import datetime
-    from typing import Any, Callable, List, Optional, Set, Tuple
+    from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -63,14 +63,15 @@ class BestFightOddsScraper(BaseScraper):
         wait_time: Time to wait for elements to load.
     """
 
-    columns: List[str] = [
-        "fight_id",
-        "fighter_id",
-        "opening",
-        "closing_range_min",
-        "closing_range_max",
-    ]
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
+        "fight_id": str,
+        "fighter_id": str,
+        "opening": pd.Int64Dtype(),
+        "closing_range_min": pd.Int64Dtype(),
+        "closing_range_max": pd.Int64Dtype(),
+    }
+    sort_fields = ["fight_id", "fighter_id"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "BestFightOdds_odds.csv"
     n_sessions = 1  # New default value
     min_score = 90
@@ -492,7 +493,7 @@ class BestFightOddsScraper(BaseScraper):
             0
         ]  # type: ignore[index]
 
-        if element.get_attribute("id") == "hfmr8":  # pargma: no cover
+        if element.get_attribute("id") == "hfmr8":  # pragma: no cover
             while self.captcha_indicator(driver):
                 logging.warning("Human recognition page detected, stalling..")
                 time.sleep(5)
@@ -944,8 +945,8 @@ class BestFightOddsScraper(BaseScraper):
         else:
             logger.info("0 records scraped, unable to add more by rerunning scraping.")
 
-        logger.info("Removing duplicates from fighter_names.csv...")
         self.fighter_names.remove_duplicates_from_file()
+        self.remove_duplicates_from_file()
 
 
 class FighterNames(BaseFileHandler):
@@ -956,13 +957,14 @@ class FighterNames(BaseFileHandler):
     including IDs, names, and database identifiers.
     """
 
-    columns: List[str] = [
-        "fighter_id",
-        "database",
-        "name",
-        "database_id",
-    ]
-    data = pd.DataFrame(columns=columns)
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
+        "fighter_id": str,
+        "database": str,
+        "name": str,
+        "database_id": str,
+    }
+    sort_fields = ["database", "name", "fighter_id"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "fighter_names.csv"
 
     def check_missing_records(self) -> None:
