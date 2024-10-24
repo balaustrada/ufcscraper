@@ -34,7 +34,7 @@ class EventScraper(BaseScraper):
     scraping functionality from `BaseScraper`.
     """
 
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "event_id": str,
         "event_name": str,
         "event_date": str,

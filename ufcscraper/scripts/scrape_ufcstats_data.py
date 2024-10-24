@@ -73,10 +73,6 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     logger.info(f"Scraping fights...")
     scraper.fight_scraper.scrape_fights()
 
-    logger.info("")
-    logger.info(f"Removing duplicates from CSV files...")
-    scraper.remove_duplicates_from_file()
-
 
 def get_args() -> argparse.Namespace:
     """

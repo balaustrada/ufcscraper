@@ -63,7 +63,7 @@ class BestFightOddsScraper(BaseScraper):
         wait_time: Time to wait for elements to load.
     """
 
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fight_id": str,
         "fighter_id": str,
         "opening": pd.Int64Dtype(),
@@ -957,7 +957,7 @@ class FighterNames(BaseFileHandler):
     including IDs, names, and database identifiers.
     """
 
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fighter_id": str,
         "database": str,
         "name": str,

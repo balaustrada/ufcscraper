@@ -45,7 +45,7 @@ class FightScraper(BaseScraper):
     rounds (through the companion class `RoundsHandler`).
     """
 
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fight_id": str,
         "event_id": str,
         "referee": str,
@@ -138,7 +138,7 @@ class FightScraper(BaseScraper):
                     referee = self.get_referee(overview)
                     fighter_1, fighter_2 = self.get_fighters(fight_details, soup)
                     num_rounds = overview[2].text.split(":")[1].strip()[0].strip()
-                    num_rounds = int(num_rounds) if num_rounds != "N" else ""
+                    num_rounds = str(int(num_rounds)) if num_rounds != "N" else ""
                     title_fight = self.get_title_fight(fight_type)
                     weight_class = self.get_weight_class(fight_type)
                     gender = self.get_gender(fight_type)
@@ -400,7 +400,7 @@ class FightScraper(BaseScraper):
     def get_scores(
         overview: bs4.element.ResultSet,
         select_result: bs4.element.ResultSet,
-    ) -> Tuple[int, int]:
+    ) -> Tuple[str, str]:
         """
         Extracts the scores of the fight if they the fight went the distance.
 
@@ -409,7 +409,8 @@ class FightScraper(BaseScraper):
             select_result: A ResultSet containing the fight result.
 
         Returns:
-            A tuple with the scores of the fight.
+            A tuple with the scores of the fight. As str to be
+            written to the CSV file.
 
         """
         if "Decision" in select_result[0].text.split(":")[1]:
@@ -433,7 +434,7 @@ class FightScraper(BaseScraper):
                     scores1 += int(s1)
                     scores2 += int(s2)
 
-                return scores1, scores2
+                return str(scores1), str(scores2)
 
         return "", ""
 
@@ -446,7 +447,7 @@ class RoundsHandler(BaseFileHandler):
     and saves the data to a CSV file.
     """
 
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fight_id": str,
         "fighter_id": str,
         "round": pd.Int64Dtype(),

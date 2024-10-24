@@ -36,7 +36,7 @@ class FighterScraper(BaseScraper):
     personal information, physical attributes, and fight records. The data
     is saved to a CSV file for further analysis.
     """
-    dtypes: Dict[str, type] = {
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fighter_id": str,
         "fighter_f_name": str,
         "fighter_l_name": str,

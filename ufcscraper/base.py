@@ -38,7 +38,7 @@ class BaseFileHandler(ABC):
         data: A pandas DataFrame that holds the data loaded from the CSV file.
     """
 
-    dtypes: Dict[str | type]
+    dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype]
     sort_fields: List[str]
     data_folder: Path
     filename: str
@@ -59,7 +59,6 @@ class BaseFileHandler(ABC):
         self.data_file: Path = Path(self.data_folder) / self.filename
 
         self.check_data_file()
-        self.remove_duplicates_from_file()
         self.load_data()
 
     def check_data_file(self) -> None:
