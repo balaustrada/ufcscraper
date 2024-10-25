@@ -152,6 +152,13 @@ class FightScraper(BaseScraper):
                     fight_id = self.id_from_url(url)
                     scores_1, scores_2 = self.get_scores(overview, select_result)
 
+                    # Correctly assign winner, in UFCStats winner is the scores_2
+                    # always...
+                    # I also need to flip in case of tie (right score for the higher
+                    # ranked)
+                    if winner != fighter_2:
+                        scores_1, scores_2 = scores_2, scores_1
+
                     # I am saving first the rounds and then the fights
                     # in case of error the fight doesn't count as scraped
                     fight_stats_select = soup.select("p.b-fight-details__table-text")
@@ -195,6 +202,7 @@ class FightScraper(BaseScraper):
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
 
         self.remove_duplicates_from_file()
+        self.rounds_handler.remove_duplicates_from_file()
 
     def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
         """Retrieves URLs of all fights from UFCStats.
