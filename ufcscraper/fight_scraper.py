@@ -202,6 +202,7 @@ class FightScraper(BaseScraper):
                     logger.error(f"Error saving data from url: {url}\nError: {e}")
 
         self.remove_duplicates_from_file()
+        self.rounds_handler.remove_duplicates_from_file()
 
     def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
         """Retrieves URLs of all fights from UFCStats.
