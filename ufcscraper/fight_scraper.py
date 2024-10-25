@@ -303,14 +303,16 @@ class FightScraper(BaseScraper):
             win_lose: A ResultSet containing win/lose status for the fighters.
 
         Returns:
-            The ID of the winner, or 'Draw' if it's a draw, or '' if not
-                determined.
+            The ID of the winner, or 'Draw' if it's a draw, or 'NC if no contest
+            or '' if not determined.
         """
         fighter_1_result = win_lose[0].text.strip()
         fighter_2_result = win_lose[1].text.strip()
 
         if fighter_1_result == "D" and fighter_2_result == "D":
             return "Draw"
+        elif fighter_1_result == "NC" and fighter_2_result == "NC":
+            return "NC"
         elif fighter_1_result == "W":
             return fighter_1
         elif fighter_2_result == "W":
