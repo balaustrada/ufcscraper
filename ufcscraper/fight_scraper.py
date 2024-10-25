@@ -230,16 +230,18 @@ class FightScraper(BaseScraper):
 
         event_urls: List[str] = list(map(EventScraper.url_from_id, event_ids))
 
-        fight_urls = []
+        fight_urls = set()
         i = 0
         for _, soup in links_to_soups(event_urls, self.n_sessions):
             for item in soup.find_all("a", class_="b-flag b-flag_style_green"):
-                fight_urls.append(item.get("href"))
+                fight_urls.add(item.get("href"))
+            for item in soup.find_all("a", class_="b-flag b-flag_style_bordered"):
+                fight_urls.add(item.get("href"))
             print(f"Scraped {i}/{len(event_urls)} events...", end="\r")
             i += 1
 
         logger.info(f"Got {len(fight_urls)} fight links...")
-        return fight_urls
+        return list(fight_urls)
 
     @staticmethod
     def get_referee(overview: bs4.element.ResultSet) -> str:
