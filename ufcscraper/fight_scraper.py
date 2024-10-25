@@ -150,7 +150,9 @@ class FightScraper(BaseScraper):
                     winner = self.get_winner(fighter_1, fighter_2, win_lose)
                     time_format = overview[2].text.split(":")[1].strip()
                     fight_id = self.id_from_url(url)
-                    scores_1, scores_2 = self.get_scores(overview, select_result)
+                    scores_1, scores_2 = self.get_scores(
+                        overview, select_result, select_result_details
+                    )
 
                     # Correctly assign winner, in UFCStats winner is the scores_2
                     # always...
@@ -403,15 +405,26 @@ class FightScraper(BaseScraper):
                 select_result[0].text.split(":")[1].split()[-1],
             )
         else:
-            return (
-                select_result[0].text.split(":")[1],
-                select_result_details[1].text.split(":")[-1],
-            )
+            result = select_result[0].text.split(":")[1]
+            result_details = select_result_details[1].text.split(":")[-1]
+
+            if result_details.count("-") >= 3:
+                # This is the case of an overturned decision where the
+                # - appearing at least three times is the score '29 - 28'
+                # for the three judges (+ maybe an extra term in the
+                # description)
+                return (
+                    result,
+                    " ".join(result_details.split(".")[-4].split("-")[-2].split()[:-3]),
+                )
+
+            return result, result_details
 
     @staticmethod
     def get_scores(
         overview: bs4.element.ResultSet,
         select_result: bs4.element.ResultSet,
+        select_result_details: bs4.element.ResultSet,
     ) -> Tuple[str, str]:
         """
         Extracts the scores of the fight if they the fight went the distance.
@@ -425,7 +438,11 @@ class FightScraper(BaseScraper):
             written to the CSV file.
 
         """
-        if "Decision" in select_result[0].text.split(":")[1]:
+        result_details = select_result_details[1].text.split(":")[-1]
+
+        if ("Decision" in select_result[0].text.split(":")[1]) or (
+            result_details.count("-") >= 3
+        ):
             # Initialize a list to hold the extracted scores
             scores = []
 
