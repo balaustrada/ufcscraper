@@ -150,7 +150,9 @@ class FightScraper(BaseScraper):
                     winner = self.get_winner(fighter_1, fighter_2, win_lose)
                     time_format = overview[2].text.split(":")[1].strip()
                     fight_id = self.id_from_url(url)
-                    scores_1, scores_2 = self.get_scores(overview, select_result)
+                    scores_1, scores_2 = self.get_scores(
+                        overview, select_result, select_result_details
+                    )
 
                     # Correctly assign winner, in UFCStats winner is the scores_2
                     # always...
@@ -230,16 +232,18 @@ class FightScraper(BaseScraper):
 
         event_urls: List[str] = list(map(EventScraper.url_from_id, event_ids))
 
-        fight_urls = []
+        fight_urls = set()
         i = 0
         for _, soup in links_to_soups(event_urls, self.n_sessions):
             for item in soup.find_all("a", class_="b-flag b-flag_style_green"):
-                fight_urls.append(item.get("href"))
+                fight_urls.add(item.get("href"))
+            for item in soup.find_all("a", class_="b-flag b-flag_style_bordered"):
+                fight_urls.add(item.get("href"))
             print(f"Scraped {i}/{len(event_urls)} events...", end="\r")
             i += 1
 
         logger.info(f"Got {len(fight_urls)} fight links...")
-        return fight_urls
+        return list(fight_urls)
 
     @staticmethod
     def get_referee(overview: bs4.element.ResultSet) -> str:
@@ -301,14 +305,16 @@ class FightScraper(BaseScraper):
             win_lose: A ResultSet containing win/lose status for the fighters.
 
         Returns:
-            The ID of the winner, or 'Draw' if it's a draw, or '' if not
-                determined.
+            The ID of the winner, or 'Draw' if it's a draw, or 'NC if no contest
+            or '' if not determined.
         """
         fighter_1_result = win_lose[0].text.strip()
         fighter_2_result = win_lose[1].text.strip()
 
         if fighter_1_result == "D" and fighter_2_result == "D":
             return "Draw"
+        elif fighter_1_result == "NC" and fighter_2_result == "NC":
+            return "NC"
         elif fighter_1_result == "W":
             return fighter_1
         elif fighter_2_result == "W":
@@ -399,15 +405,26 @@ class FightScraper(BaseScraper):
                 select_result[0].text.split(":")[1].split()[-1],
             )
         else:
-            return (
-                select_result[0].text.split(":")[1],
-                select_result_details[1].text.split(":")[-1],
-            )
+            result = select_result[0].text.split(":")[1]
+            result_details = select_result_details[1].text.split(":")[-1]
+
+            if result_details.count("-") >= 3:
+                # This is the case of an overturned decision where the
+                # - appearing at least three times is the score '29 - 28'
+                # for the three judges (+ maybe an extra term in the
+                # description)
+                return (
+                    result,
+                    " ".join(result_details.split(".")[-4].split("-")[-2].split()[:-3]),
+                )
+
+            return result, result_details
 
     @staticmethod
     def get_scores(
         overview: bs4.element.ResultSet,
         select_result: bs4.element.ResultSet,
+        select_result_details: bs4.element.ResultSet,
     ) -> Tuple[str, str]:
         """
         Extracts the scores of the fight if they the fight went the distance.
@@ -421,7 +438,11 @@ class FightScraper(BaseScraper):
             written to the CSV file.
 
         """
-        if "Decision" in select_result[0].text.split(":")[1]:
+        result_details = select_result_details[1].text.split(":")[-1]
+
+        if ("Decision" in select_result[0].text.split(":")[1]) or (
+            result_details.count("-") >= 3
+        ):
             # Initialize a list to hold the extracted scores
             scores = []
 
