@@ -82,7 +82,17 @@ class BaseFileHandler(ABC):
         This method reads the CSV file, removes any duplicate rows, and then
         saves the cleaned data back to the same file.
         """
-        data = pd.read_csv(self.data_file, dtype=self.dtypes).drop_duplicates()
+        date_columns = [
+            col for col, dtype in self.dtypes.items() if dtype == "datetime64[ns]"
+        ]
+        non_date_types = {
+            col: dtype
+            for col, dtype in self.dtypes.items()
+            if dtype != "datetime64[ns]"
+        }
+        data = pd.read_csv(
+            self.data_file, dtype=non_date_types, parse_dates=date_columns
+        ).drop_duplicates()
         data = data.sort_values(by=self.sort_fields).reset_index(drop=True)
         data.to_csv(self.data_file, index=False)
 
@@ -92,7 +102,17 @@ class BaseFileHandler(ABC):
         This method reads the CSV file, removes duplicates, and stores the data
         in the `data` attribute for further processing.
         """
-        self.data = pd.read_csv(self.data_file, dtype=self.dtypes).drop_duplicates()
+        date_columns = [
+            col for col, dtype in self.dtypes.items() if dtype == "datetime64[ns]"
+        ]
+        non_date_types = {
+            col: dtype
+            for col, dtype in self.dtypes.items()
+            if dtype != "datetime64[ns]"
+        }
+        self.data = pd.read_csv(
+            self.data_file, dtype=non_date_types, parse_dates=date_columns
+        ).drop_duplicates()
 
 
 class BaseScraper(BaseFileHandler):

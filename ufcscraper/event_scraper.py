@@ -37,7 +37,7 @@ class EventScraper(BaseScraper):
     dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "event_id": str,
         "event_name": str,
-        "event_date": str,
+        "event_date": "datetime64[ns]",
         "event_city": str,
         "event_state": str,
         "event_country": str,

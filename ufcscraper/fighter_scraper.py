@@ -45,7 +45,7 @@ class FighterScraper(BaseScraper):
         "fighter_weight_lbs": float,
         "fighter_reach_cm": float,
         "fighter_stance": str,
-        "fighter_dob": str,
+        "fighter_dob": "datetime64[ns]",
         "fighter_w": pd.Int64Dtype(),
         "fighter_l": pd.Int64Dtype(),
         "fighter_d": pd.Int64Dtype(),
