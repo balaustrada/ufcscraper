@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ufcscraper"
 readme = "README.rst"
-version = "1.0.0"
+version = "1.0.1"
 description = "A data scraper for UFC stats and odds."
 authors = ["César Ramírez-Pérez"]
 
@@ -22,8 +22,8 @@ python-semantic-release = "^9.14.0"
 
 [tool.semantic_release]
 version_toml = [
-    "pyproject.toml:tool.poetry.version"
-]
+    "pyproject.toml:tool.poetry.version",
+]  
 branch = "main"
 changelog_file = "CHANGELOG.md"
 build_command = "pip install poetry && poetry build"
