@@ -1,31 +1,32 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-packages = ["ufcscraper","ufcscraper.scripts"]
-
-[tool.setuptools.dynamic]
-version = {attr = "ufcscraper.__version__"}
-dependencies = {file = ["requirements.txt"]}
-
-[project]
+[tool.poetry]
 name = "ufcscraper"
-readme = "README.md"
-requires-python = ">=3.9.13"
-dynamic = ["version"]
-dependencies = [
-    "beautifulsoup4",
-    "fuzzywuzzy",
-    "pandas",
-    "python_dateutil",
-    "python-Levenshtein",
-    "Requests",
-    "selenium",
-    "urllib3",
-    "lxml",
-]
+readme = "README.rst"
+version = "1.0.0"
+description = "A data scraper for UFC stats and odds."
+authors = ["César Ramírez-Pérez"]
 
-[project.scripts]
+[tool.poetry.dependencies]
+python = ">=3.12,<4"
+beautifulsoup4 = "^4.12.3"
+fuzzywuzzy = "^0.18.0"
+pandas = "^2.2.3"
+python-dateutil = "^2.9.0.post0"
+python-levenshtein = "^0.26.1"
+requests = "^2.32.3"
+selenium = "^4.26.1"
+urllib3 = "^2.2.3"
+lxml = "^5.3.0"
+
+[tool.poetry.group.dev.dependencies]
+python-semantic-release = "^9.14.0"
+
+[tool.semantic_release]
+version_variable = "pyproject.toml:version"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
 ufcscraper_scrape_ufcstats_data = "ufcscraper.scripts.scrape_ufcstats_data:main"
 ufcscraper_scrape_bestfightodds_data = "ufcscraper.scripts.scrape_bestfightodds_data:main"
