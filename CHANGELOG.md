@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.1.1 (2024-11-20)
+
+### Bug Fixes
+
+- **package**: Apply black formatting
+  ([`243162f`](https://github.com/balaustrada/ufcscraper/commit/243162f07dedf1e0680a5d16cdd11b4ffc3d3a90))
+
+### Build System
+
+- Fix PSR
+  ([`ca04aec`](https://github.com/balaustrada/ufcscraper/commit/ca04aec6e4d304f3ebddec302c59f268834bcae0))
+
+
 ## v0.1.0 (2024-11-20)
 
 ### Bug Fixes
