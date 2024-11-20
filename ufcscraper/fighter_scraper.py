@@ -30,12 +30,13 @@ logger = logging.getLogger(__name__)
 
 
 class FighterScraper(BaseScraper):
-    """ Scrapes and stores fighter data from UFCStats.
+    """Scrapes and stores fighter data from UFCStats.
 
     This class handles scraping fighter details from UFCStats, including
     personal information, physical attributes, and fight records. The data
     is saved to a CSV file for further analysis.
     """
+
     dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fighter_id": str,
         "fighter_f_name": str,
@@ -70,7 +71,7 @@ class FighterScraper(BaseScraper):
     def scrape_fighters(self) -> None:
         """Scrapes fighter details from URLs and saves the data to a CSV file.
 
-        This method retrieves fighter URLs, scrapes details from each URL, 
+        This method retrieves fighter URLs, scrapes details from each URL,
         and appends the data to the CSV file. Handles errors and logs progress.
         """
         existing_urls = set(map(self.url_from_id, self.data["fighter_id"]))
@@ -107,9 +108,7 @@ class FighterScraper(BaseScraper):
                     w = record[0]
                     l = record[1]
                     d = record[-1][0] if len(record[-1]) > 1 else record[-1]
-                    nc_dq = (
-                        record[-1].split("(")[-1][0] if len(record[-1]) > 1 else ""
-                    )
+                    nc_dq = record[-1].split("(")[-1][0] if len(record[-1]) > 1 else ""
 
                     writer.writerow(
                         [

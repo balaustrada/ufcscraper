@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 class UFCScraper(BaseScraper):
     """A class to handle scraping of UFC-related data.
 
-    This class is responsible for initializing and managing the individual 
-    scrapers for UFC events, fighters, and fights. It provides methods to 
-    check data files, load data, remove duplicates, and scrape different 
+    This class is responsible for initializing and managing the individual
+    scrapers for UFC events, fighters, and fights. It provides methods to
+    check data files, load data, remove duplicates, and scrape different
     types of UFC data.
 
     Attributes:
@@ -32,6 +32,7 @@ class UFCScraper(BaseScraper):
         fighter_scraper: Scraper instance for UFC fighters.
         fight_scraper: Scraper instance for UFC fights.
     """
+
     def __init__(
         self,
         data_folder: Path | str,
@@ -40,7 +41,7 @@ class UFCScraper(BaseScraper):
     ) -> None:
         """Initialize the UFCScraper with given parameters.
 
-        This class collects all the other scraper classes and 
+        This class collects all the other scraper classes and
         gives a consistent interface for scraping data.
 
         Args:
@@ -112,7 +113,7 @@ class UFCScraper(BaseScraper):
     def scrape_fights(self, get_all_events: bool = False) -> None:
         """Scrape fight data.
 
-        Calls the fight scraper to collect fight information based on the 
+        Calls the fight scraper to collect fight information based on the
             specified parameter.
 
         Args:

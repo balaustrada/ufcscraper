@@ -18,6 +18,7 @@ Arguments:
 - **n-sessions**: Number of concurrent scraping sessions (default: 1).
 - **delay**: Delay in seconds between requests (default: 0).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,13 +38,13 @@ from ufcscraper.ufc_scraper import UFCScraper
 
 def main(args: Optional[argparse.Namespace] = None) -> None:
     """
-    This function sets up logging, parses command-line arguments 
-    (if not provided), initializes a `UFCScraper` instance, performs 
+    This function sets up logging, parses command-line arguments
+    (if not provided), initializes a `UFCScraper` instance, performs
     scraping of fighters, events, and fights, and removes duplicates
     from the CSV files.
 
     Args:
-        args: Command-line arguments. If None, arguments are parsed 
+        args: Command-line arguments. If None, arguments are parsed
             using `get_args`.
     """
     if args is None:
@@ -78,7 +79,7 @@ def get_args() -> argparse.Namespace:
     """
     Parse command-line arguments and return them as an `argparse.Namespace` object.
 
-    This function sets up the command-line argument parser and defines the arguments 
+    This function sets up the command-line argument parser and defines the arguments
     that can be passed to the script. It returns the parsed arguments as an `argparse.Namespace` object.
 
     Returns:

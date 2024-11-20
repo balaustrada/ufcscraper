@@ -168,5 +168,6 @@ class TestFighterScrape(unittest.TestCase):
 
         self.assertIn("Using existing file", cm.output[0])
 
+
 if __name__ == "__main__":
     unittest.main()

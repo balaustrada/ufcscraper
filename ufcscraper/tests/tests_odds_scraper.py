@@ -258,9 +258,7 @@ class TestOddsScraper(unittest.TestCase):
         mock_elements[0].get_attribute.side_effect = lambda x: (
             "content-list"
             if x == "class"
-            else search_html
-            if x == "innerHTML"
-            else None
+            else search_html if x == "innerHTML" else None
         )
 
         mock_wait = MockWait.return_value
@@ -341,6 +339,7 @@ class TestOddsScraper(unittest.TestCase):
                     Path(THIS_DIR / f"test_files/{file}.csv").read_text().splitlines()
                 ),
             )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -93,5 +93,6 @@ class TestEventScraper(unittest.TestCase):
             self.scraper.url_from_id("event1"),
         )
 
+
 if __name__ == "__main__":
     unittest.main()

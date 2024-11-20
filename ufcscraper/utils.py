@@ -49,18 +49,18 @@ def links_to_soups(
     urls: List[str], n_sessions: int = 1, delay: float = 0
 ) -> Generator[Tuple[str, bs4.BeautifulSoup]]:
     """Parse the HTML content from given URLs into a BeautifulSoup objects.
-        
-    Create a generator that yields tuples of URLs and their corresponding 
+
+    Create a generator that yields tuples of URLs and their corresponding
     BeautifulSoup objects.
 
-    This function uses multiple processes to fetch and parse web pages 
+    This function uses multiple processes to fetch and parse web pages
     concurrently.
 
     Args:
         urls: List of URLs to be scraped.
-        n_sessions: Number of concurrent sessions to use 
+        n_sessions: Number of concurrent sessions to use
             for scraping. Defaults to 1.
-        delay: Delay in seconds to wait before making each 
+        delay: Delay in seconds to wait before making each
             request. Defaults to 0.
 
     Returns:
@@ -116,8 +116,8 @@ def link_to_soup(
 
     Args:
         url: The URL to scrape.
-        session: A requests session object. If not provided, a new session 
-            will be created. 
+        session: A requests session object. If not provided, a new session
+            will be created.
         delay: Delay in seconds before making the request.
 
     Returns:
@@ -146,9 +146,10 @@ def worker_constructor(
         max_exception_retries : Maximum number of retries for handling exceptions.
 
     Returns:
-        A worker function that processes tasks from a queue and puts results in 
+        A worker function that processes tasks from a queue and puts results in
             another queue.
     """
+
     def worker(
         task_queue: multiprocessing.Queue,
         result_queue: multiprocessing.Queue,
@@ -198,22 +199,23 @@ class element_present_in_list(object):
     Attributes:
         locators (Tuple[str, str]): Locators used to find elements on the page.
     """
+
     def __init__(self, *locators: Tuple[str, str]):
         """Initialize the element_present_in_list class.
-        
+
         Args:
             locators: List of all locators used to find elements on the page.
         """
         self.locators = locators
 
     def __call__(self, driver: webdriver.Chrome) -> bool | List[WebElement]:
-        """ Check if any elements matching the locators are present on the page.
+        """Check if any elements matching the locators are present on the page.
 
         Args:
             driver: The WebDriver instance used to interact with the web page.
 
         Returns:
-            True if elements are found, otherwise False. If elements are found, 
+            True if elements are found, otherwise False. If elements are found,
                 returns the list of WebElements.
         """
         for locator in self.locators:
@@ -225,7 +227,7 @@ class element_present_in_list(object):
 
 def clean_date_string(date_str: str) -> str:
     """
-    Clean a date string to remove incorrect ordinal suffixes and make it 
+    Clean a date string to remove incorrect ordinal suffixes and make it
         suitable for parsing.
 
     Args:
@@ -246,7 +248,7 @@ def parse_date(date_str: str) -> Optional[datetime.date]:
         date_str (str): The date string to be parsed.
 
     Returns:
-        Optional[datetime.date]: The parsed date object if successful, 
+        Optional[datetime.date]: The parsed date object if successful,
             otherwise None.
     """
     # Clean the date string

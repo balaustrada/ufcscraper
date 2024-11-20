@@ -212,5 +212,6 @@ class TestFightScraper(unittest.TestCase):
         with self.assertRaises(ValueError):
             RoundsHandler.get_stats(fight_stats_select, 2, 0, 2)
 
+
 if __name__ == "__main__":
     unittest.main()
