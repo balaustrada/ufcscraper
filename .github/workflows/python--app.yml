@@ -41,11 +41,11 @@ jobs:
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v2.3.0
             
-
   cd:
     permissions:
       id-token: write
-      content: write
+      contents: write
+
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
