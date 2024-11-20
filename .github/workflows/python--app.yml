@@ -62,15 +62,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install poetry
-        uses: snok/install-poetry@v1
-  
-      - name: Install package
-        run: poetry install
-
-      - name: Build package
-        run: poetry build
-
       - name: Use Python Semantic Release to prepare release
         id: release
         uses: python-semantic-release/python-semantic-release@v8.3.0
