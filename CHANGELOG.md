@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.1.2 (2024-11-20)
+
+### Bug Fixes
+
+- Correct version
+  ([`566b1e5`](https://github.com/balaustrada/ufcscraper/commit/566b1e5659cd8b79a5721723a177b95a4c7d3321))
+
+### Build System
+
+- Fix version in toml
+  ([`a1b590e`](https://github.com/balaustrada/ufcscraper/commit/a1b590ef61d155c0ea6933699a9410c77a2a9913))
+
+
 ## v0.1.1 (2024-11-20)
 
 ### Bug Fixes
