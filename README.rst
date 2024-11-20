@@ -22,7 +22,7 @@ This project is a data scraper designed to collect and process fight statistics 
 
 2. **Scraping Betting Odds**: Betting odds for UFC fights are scraped from `BestFightOdds <https://bestifghtodds.com/>`_ and matched to the correct fighters.
 
-The data model for the UFC statistics part can be found `here <tables/ufcstats_tables.html>`_ while the one for BestFightOdds odds can be found `here <tables/bestfightodds_tables.html>`_.
+The data model for the UFC statistics part can be found in `UFC statistics model <tables/ufcstats_tables.html>`_ while the one for BestFightOdds odds can be found in `BestFightOdds model <tables/bestfightodds_tables.html>`_.
 
 Installation
 ==============
@@ -32,6 +32,7 @@ After cloning the environment:
 .. code-block:: shell
 
     git clone https://github.com/balaustrada/ufcscraper.git
+
 The code can be easily installed through participants
 
 .. code-block:: shell
