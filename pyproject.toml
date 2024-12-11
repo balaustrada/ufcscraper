@@ -6,7 +6,7 @@ description = "A data scraper for UFC stats and odds."
 authors = ["César Ramírez-Pérez"]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4"
+python = ">=3.10,<4"
 beautifulsoup4 = "^4.12.3"
 fuzzywuzzy = "^0.18.0"
 pandas = "^2.2.3"
