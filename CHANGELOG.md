@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.3 (2024-12-11)
+
+### Bug Fixes
+
+- **project**: Loosen python requirement
+  ([`dd644ec`](https://github.com/balaustrada/ufcscraper/commit/dd644ec1e0019fff6f684a04731be40764038527))
+
+
 ## v0.1.2 (2024-11-20)
 
 ### Bug Fixes
@@ -31,14 +39,14 @@
 
 ### Bug Fixes
 
-- **workflow**: Update yaml
-  ([`cdfee5e`](https://github.com/balaustrada/ufcscraper/commit/cdfee5efe7e6d877410c232a8bb92b7b8147d84a))
-
 - **workflow**: Fix yaml
   ([`3e07ae1`](https://github.com/balaustrada/ufcscraper/commit/3e07ae1abf429f40f1e9d06c4e77e21010bb971d))
 
 - **workflow**: Fix yaml
   ([`fe0c80e`](https://github.com/balaustrada/ufcscraper/commit/fe0c80ed68cbf9f19b3cd1e305f8b88a7c2ff4a9))
+
+- **workflow**: Update yaml
+  ([`cdfee5e`](https://github.com/balaustrada/ufcscraper/commit/cdfee5efe7e6d877410c232a8bb92b7b8147d84a))
 
 ### Features
 
