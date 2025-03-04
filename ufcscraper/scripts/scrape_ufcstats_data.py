@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 from ufcscraper.ufc_scraper import UFCScraper
+from ufcscraper.replacement_scraper import ReplacementScraper
 
 
 def main(args: Optional[argparse.Namespace] = None) -> None:
@@ -74,6 +75,14 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     logger.info(f"Scraping fights...")
     scraper.fight_scraper.scrape_fights()
 
+    if args.scrape_replacements:
+        logger.info("")
+        logger.info(f"Scraping replacements...")
+        replacement_scraper = ReplacementScraper(
+            data_folder=args.data_folder,
+        )
+        replacement_scraper.scrape_replacements()
+
 
 def get_args() -> argparse.Namespace:
     """
@@ -104,6 +113,8 @@ def get_args() -> argparse.Namespace:
     parser.add_argument("--n-sessions", type=int, default=1, help="Number of sessions.")
 
     parser.add_argument("--delay", type=int, default=0, help="Delay between requests.")
+
+    parser.add_argument("--scrape-replacements", action="store_true", help="Scrape replacements from BetMMA.tips.")
 
     return parser.parse_args()
 
