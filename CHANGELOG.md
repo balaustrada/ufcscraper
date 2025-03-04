@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-03-04)
+
+### Features
+
+- **scraper**: Replacement scraper fixed
+  ([`7048d06`](https://github.com/balaustrada/ufcscraper/commit/7048d0626dab5c5eb89fd48f8b00ff7940643ec1))
+
+
 ## v0.1.3 (2024-12-11)
 
 ### Bug Fixes
