@@ -2,3 +2,4 @@
 omit = 
     ufcscraper/tests/*
     ufcscraper/scripts/*
+    ufcscraper/replacement_scraper.py
