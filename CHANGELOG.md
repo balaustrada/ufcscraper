@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.2.1 (2025-03-04)
+
+### Bug Fixes
+
+- **replacement_scraper**: Add to ufc_scraper wrapper
+  ([`703b3e2`](https://github.com/balaustrada/ufcscraper/commit/703b3e2d0bfafff110e3d8b775249c120d8ecbd4))
+
+
 ## v0.2.0 (2025-03-04)
 
 ### Features
