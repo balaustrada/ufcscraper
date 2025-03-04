@@ -8,6 +8,7 @@ from ufcscraper.base import BaseScraper
 from ufcscraper.event_scraper import EventScraper
 from ufcscraper.fight_scraper import FightScraper
 from ufcscraper.fighter_scraper import FighterScraper
+from ufcscraper.replacement_scraper import ReplacementScraper
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -31,6 +32,7 @@ class UFCScraper(BaseScraper):
         event_scraper: Scraper instance for UFC events.
         fighter_scraper: Scraper instance for UFC fighters.
         fight_scraper: Scraper instance for UFC fights.
+        replacement_scraper: Scraper instance for replacement fights.
     """
 
     def __init__(
@@ -56,6 +58,7 @@ class UFCScraper(BaseScraper):
         self.event_scraper = EventScraper(self.data_folder, n_sessions, delay)
         self.fighter_scraper = FighterScraper(self.data_folder, n_sessions, delay)
         self.fight_scraper = FightScraper(self.data_folder, n_sessions, delay)
+        self.replacement_scraper = ReplacementScraper(self.data_folder)
 
     def check_data_file(self) -> None:
         """Check the integrity of data files for all scrapers.
@@ -80,6 +83,7 @@ class UFCScraper(BaseScraper):
             self.fighter_scraper,
             self.fight_scraper,
             self.fight_scraper.rounds_handler,
+            self.replacement_scraper,
         ]:
             scraper.load_data()
 
@@ -93,6 +97,7 @@ class UFCScraper(BaseScraper):
             self.fighter_scraper,
             self.fight_scraper,
             self.fight_scraper.rounds_handler,
+            self.replacement_scraper,
         ]:
             scraper.remove_duplicates_from_file()
 
@@ -121,3 +126,10 @@ class UFCScraper(BaseScraper):
                 already scraped.
         """
         self.fight_scraper.scrape_fights(get_all_events=get_all_events)
+
+    def scrape_replacements(self) -> None:
+        """Scrape replacement data.
+        
+        Calls the replacement scraper to collect replacement information.
+        """
+        self.replacement_scraper.scrape_replacements()
