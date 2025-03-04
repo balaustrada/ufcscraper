@@ -15,7 +15,9 @@ import pandas as pd
 from fuzzywuzzy import fuzz
 
 from ufcscraper.base import BaseScraper
-from ufcscraper.ufc_scraper import UFCScraper
+from ufcscraper.event_scraper import EventScraper
+from ufcscraper.fight_scraper import FightScraper
+from ufcscraper.fighter_scraper import FighterScraper
 from ufcscraper.utils import link_to_soup
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -139,29 +141,31 @@ class ReplacementScraper(BaseScraper): # pragma: no cover
         Returns:
             A pandas dataframe containing the relevant UFCStats information.
         """
-        ufc_scraper = UFCScraper(self.data_folder)
+        event_scraper = EventScraper(self.data_folder)
+        fight_scraper = FightScraper(self.data_folder)
+        fighter_scraper = FighterScraper(self.data_folder)
 
-        ufc_scraper.fighter_scraper.add_name_column()
+        fighter_scraper.add_name_column()
 
         # First we merge between tables to get the information we want
         ufc_data = (
-            ufc_scraper.fight_scraper.data[
+            fight_scraper.data[
                 ["fight_id", "event_id", "fighter_1", "fighter_2"]
             ]
             .merge(
-                ufc_scraper.fighter_scraper.data[["fighter_id", "fighter_name"]],
+                fighter_scraper.data[["fighter_id", "fighter_name"]],
                 left_on="fighter_1",
                 right_on="fighter_id",
             )
             .merge(
-                ufc_scraper.fighter_scraper.data[["fighter_id", "fighter_name"]].rename(
+                fighter_scraper.data[["fighter_id", "fighter_name"]].rename(
                     columns={"fighter_name": "opponent_name"}
                 ),
                 left_on="fighter_2",
                 right_on="fighter_id",
             )
             .merge(
-                ufc_scraper.event_scraper.data[["event_id", "event_date"]],
+                event_scraper.data[["event_id", "event_date"]],
                 on="event_id",
             )[
                 [

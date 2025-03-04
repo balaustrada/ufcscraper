@@ -78,10 +78,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     if args.scrape_replacements:
         logger.info("")
         logger.info(f"Scraping replacements...")
-        replacement_scraper = ReplacementScraper(
-            data_folder=args.data_folder,
-        )
-        replacement_scraper.scrape_replacements()
+        scraper.replacement_scraper.scrape_replacements()
 
 
 def get_args() -> argparse.Namespace:
