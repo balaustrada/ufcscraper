@@ -215,8 +215,8 @@ class TestOddsScraper(unittest.TestCase):
     def tearDown(self) -> None:
         rmtree(THIS_DIR / "test_files/run_files/")
 
-    @patch("ufcscraper.odds_scraper.WebDriverWait")
-    @patch("ufcscraper.odds_scraper.EC")
+    @patch("ufcscraper.odds_scraper.bfo_scraper.WebDriverWait")
+    @patch("selenium.webdriver.support.expected_conditions")
     def test_extract_odds_from_fighter_profile(
         self, MockEC: Mock, MockWait: Mock
     ) -> None:
@@ -248,8 +248,8 @@ class TestOddsScraper(unittest.TestCase):
         )
 
     @patch.object(BestFightOddsScraper, "captcha_indicator", return_value=False)
-    @patch("ufcscraper.odds_scraper.WebDriverWait")
-    @patch("ufcscraper.odds_scraper.EC")
+    @patch("ufcscraper.odds_scraper.bfo_scraper.WebDriverWait")
+    @patch("selenium.webdriver.support.expected_conditions")
     def test_search_fighter_profile(
         self, MockEC: Mock, MockWait: Mock, mock_check_captcha: Mock
     ) -> None:
@@ -277,8 +277,8 @@ class TestOddsScraper(unittest.TestCase):
         )
 
     @patch.object(BestFightOddsScraper, "captcha_indicator", return_value=False)
-    @patch("ufcscraper.odds_scraper.WebDriverWait")
-    @patch("ufcscraper.odds_scraper.EC")
+    @patch("ufcscraper.odds_scraper.bfo_scraper.WebDriverWait")
+    @patch("selenium.webdriver.support.expected_conditions")
     def test_search_fighter_profile_direct(
         self, MockEC: Mock, MockWait: Mock, mock_check_captcha: Mock
     ) -> None:

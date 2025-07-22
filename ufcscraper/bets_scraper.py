@@ -4,7 +4,7 @@ Currently it only works with Bet365 (and needs the html to be
 provided as text).
 
 Classes:
-    Bet365Scraper: A scraper for Bet365 placed bets.
+- `Bet365BetHandler`: A handler for Bet365 placed bets.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from pandas import pd
 from typing import TYPE_CHECKING
 
 from ufcscraper.base import BaseFileHandler
-from ufcscraper.odds_scraper import FighterNames
+from ufcscraper.fighter_names import FighterNames
 
 if TYPE_CHECKING:
     from typing import Dict
