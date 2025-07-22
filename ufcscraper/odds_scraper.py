@@ -999,6 +999,27 @@ class FighterNames(BaseFileHandler):
             logger.info("Reloading data after adding missing records")
             self.load_data()
 
+    def check_fighter_id(
+        self, fighter_name: str, database: str
+    ) -> Optional[str]:
+        """Check if a fighter ID exists in the database. And return its ID.
+
+        Args:
+            fighter_name: Name of the fighter.
+            database: Name of the database.
+
+        Returns:
+            str: The fighter ID if found, otherwise None.
+        """
+        fighter_id = self.data[
+            (self.data["name"] == fighter_name) & (self.data["database"] == database)
+        ]["fighter_id"]
+
+        if len(fighter_id) > 0:
+            return fighter_id.iloc[0]
+        else:
+            return None
+
     def fighter_in_database(
         self, fighter_id: str, database: str, name: str, database_id: str
     ) -> bool:
