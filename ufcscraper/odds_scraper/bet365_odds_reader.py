@@ -43,7 +43,7 @@ class Bet365OddsReader(BaseHTMLReader):
         "opponent_odds": float,
     }
 
-    sort_fields = ["html_datetime", "fight_date", "fighter_name", "opponent_name"]
+    sort_fields = ["html_datetime", "fight_date", "fighter_name", "opponent_name", "fighter_odds", "opponent_odds"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "bet365_odds.csv"
 
