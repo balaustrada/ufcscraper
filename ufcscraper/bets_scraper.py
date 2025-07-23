@@ -58,7 +58,7 @@ class Bet365BetHandler(BaseFileHandler):
         super().__init__(data_folder)
         self.fighter_names = FighterNames(data_folder)
         self._load_fighter_names_data()
-        
+
     def _load_fighter_names_data(self) -> None:
         """
         Loads fighter names from the fighter_names handler.
@@ -82,7 +82,7 @@ class Bet365BetHandler(BaseFileHandler):
             str: The fighter ID, or an empty string if not found.
         """
         fighter_id = self.fighter_names.check_fighter_id(name, "bet365")
-        
+
         if not fighter_id:
             # If fighter not in database, try to find a close match in UFCStats
             best_name, score = process.extractOne(
@@ -91,14 +91,14 @@ class Bet365BetHandler(BaseFileHandler):
                 scorer=fuzz.token_sort_ratio,
             )
             if score > 90:
-                row = self.ufcstats_names[self.ufcstats_names["name"] == best_name].iloc[0]
+                row = self.ufcstats_names[
+                    self.ufcstats_names["name"] == best_name
+                ].iloc[0]
                 return row["fighter_id"]
             else:
                 raise ValueError(f"Fighter ID not found for name: {name}")
         else:
             return fighter_id
-
-
 
     def get_bets(self, html: str) -> None:
         """
@@ -133,23 +133,31 @@ class Bet365BetHandler(BaseFileHandler):
             # 5. Bonus
             bonus_tag = bet.find("div", class_="h-StakeReturnSection_BonusText")
             bonus_text = bonus_tag.text.strip() if bonus_tag else None
-            
+
             bonus = ""
             if bonus_text:
-                bonus = bonus_text.replace("bonus", "").strip().replace("+", "").replace("€", "").strip()
+                bonus = (
+                    bonus_text.replace("bonus", "")
+                    .strip()
+                    .replace("+", "")
+                    .replace("€", "")
+                    .strip()
+                )
 
             # 6. Fighter Names and Odds
             fighter_names = []
             odds_list = []
             bet_types = []
-    
+
             for sel in bet.find_all("div", class_="h-BetSelection"):
                 name_tag = sel.find("div", class_="h-BetSelection_Name")
                 odds_tag = sel.find("div", class_="h-BetSelection_Odds")
-        
+
                 name = name_tag.text.strip() if name_tag else None
-                odds_str = odds_tag.span.text.strip() if odds_tag and odds_tag.span else None
-        
+                odds_str = (
+                    odds_tag.span.text.strip() if odds_tag and odds_tag.span else None
+                )
+
                 if name and odds_str:
                     fighter_names.append(name)
                     try:

@@ -129,7 +129,7 @@ class UFCScraper(BaseScraper):
 
     def scrape_replacements(self) -> None:
         """Scrape replacement data.
-        
+
         Calls the replacement scraper to collect replacement information.
         """
         self.replacement_scraper.scrape_replacements()

@@ -6,9 +6,9 @@ Classes:
 --------
 
 - `BestFightOddsScraper`:
-    This class handles the process of scraping betting odds from the Best Fight Odds 
-    (BFO) website. It is designed to work iteratively, continually checking for and 
-    updating missing fighter records by checking data from UFCStats. The results are 
+    This class handles the process of scraping betting odds from the Best Fight Odds
+    (BFO) website. It is designed to work iteratively, continually checking for and
+    updating missing fighter records by checking data from UFCStats. The results are
     then stored and organized for further analysis.
 """
 
@@ -941,4 +941,3 @@ class BestFightOddsScraper(BaseScraper):
 
         self.fighter_names.remove_duplicates_from_file()
         self.remove_duplicates_from_file()
-

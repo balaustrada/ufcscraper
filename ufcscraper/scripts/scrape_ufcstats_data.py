@@ -111,7 +111,11 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument("--delay", type=int, default=0, help="Delay between requests.")
 
-    parser.add_argument("--scrape-replacements", action="store_true", help="Scrape replacements from BetMMA.tips.")
+    parser.add_argument(
+        "--scrape-replacements",
+        action="store_true",
+        help="Scrape replacements from BetMMA.tips.",
+    )
 
     return parser.parse_args()
 

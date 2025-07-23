@@ -1,4 +1,3 @@
-
 """
 This module contains the `FighterNames` class, which is part of the UFC Scraper project.
 It is responsible for managing and handling fighter names and their associated data.
@@ -8,9 +7,10 @@ Classes:
     This class is responsible for managing the records of UFC fighters, including
     their IDs, names, and associated database identifiers from different sources.
     It is filled at the same time as the odds data is scraped and facilitates
-    the completeness of the scraping process. The class also handles the storage 
+    the completeness of the scraping process. The class also handles the storage
     of this data.
 """
+
 from __future__ import annotations
 
 import csv
@@ -23,9 +23,11 @@ from ufcscraper.base import BaseFileHandler
 from ufcscraper.ufc_scraper import UFCScraper
 
 if TYPE_CHECKING:  # pragma: no cover
-    from typing import Dict,Optional
+    from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+
 class FighterNames(BaseFileHandler):
     """A class to manage and handle fighter names and their associated data.
 
@@ -76,9 +78,7 @@ class FighterNames(BaseFileHandler):
             logger.info("Reloading data after adding missing records")
             self.load_data()
 
-    def check_fighter_id(
-        self, fighter_name: str, database: str
-    ) -> Optional[str]:
+    def check_fighter_id(self, fighter_name: str, database: str) -> Optional[str]:
         """Check if a fighter ID exists in the database. And return its ID.
 
         Args:

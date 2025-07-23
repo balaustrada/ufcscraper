@@ -3,8 +3,8 @@ This module contains the `EventScraper` class, which is responsible for scraping
 event data from the UFCStats website.
 
 The `EventScraper` class inherits from `BaseScraper` and provides functionality
-to retrieve and process event details such as event name, date, city, state, and 
-country. The scraped data is stored in a CSV file (`event_data.csv`) and can be 
+to retrieve and process event details such as event name, date, city, state, and
+country. The scraped data is stored in a CSV file (`event_data.csv`) and can be
 used for further analysis.
 """
 

@@ -1,7 +1,7 @@
-""" Base modules for ufc scraper
+"""Base modules for ufc scraper
 
 This module defines BaseFileHandler and BaseScraper classes,
-meant to be inherited by specific scraper or file handler 
+meant to be inherited by specific scraper or file handler
 modules.
 """
 
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 from abc import ABC
@@ -165,3 +166,31 @@ class BaseScraper(BaseFileHandler):
             return BaseScraper.id_from_url(url[:-1])
 
         return url.split("/")[-1]
+
+
+class BaseHTMLReader(BaseFileHandler):
+    """Base class for HTML readers associated with a CSV file.
+
+    This class provides basic functionality for reading HTML files and
+    storing the data in a CSV file. It includes methods to read HTML content
+    and convert it into a pandas DataFrame.
+    """
+
+    def __init__(self, html_file: Path | str, data_folder: Path | str):
+        """Initializes the BaseHTMLReader with the specified HTML file and data folder.
+
+        Args:
+            html_file (Path | str): The path to the HTML file to read.
+            data_folder (Path | str): The folder where the CSV file is stored or will be created.
+        """
+        super().__init__(data_folder)
+        self.html_file = Path(html_file)
+        self.html_datetime = datetime.fromtimestamp(self.html_file.stat().st_mtime)
+
+    def read_html(self) -> str:
+        """Reads the HTML content from the specified HTML file.
+
+        Returns:
+            str: The HTML content as a string.
+        """
+        return self.html_file.read_text()

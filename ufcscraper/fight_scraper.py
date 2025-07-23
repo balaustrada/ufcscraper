@@ -1,17 +1,17 @@
 """
-This module defines classes for scraping fight and round data from the UFCStats 
+This module defines classes for scraping fight and round data from the UFCStats
 website.
 
 Classes:
-    FightScraper: Inherits from `BaseScraper` and is responsible for scraping 
-    detailed fight statistics, such as fighter information, results, referees, 
-    and more. The data is stored in a CSV file named `fight_data.csv`. It also 
-    interacts with the `RoundsHandler` to scrape and store round-specific 
+    FightScraper: Inherits from `BaseScraper` and is responsible for scraping
+    detailed fight statistics, such as fighter information, results, referees,
+    and more. The data is stored in a CSV file named `fight_data.csv`. It also
+    interacts with the `RoundsHandler` to scrape and store round-specific
     statistics.
-    
-    RoundsHandler: Inherits from `BaseFileHandler` and manages the collection 
-    and storage of round-specific fight data. The data is saved in a CSV file 
-    named `round_data.csv`. It handles statistics like strikes, takedowns, 
+
+    RoundsHandler: Inherits from `BaseFileHandler` and manages the collection
+    and storage of round-specific fight data. The data is saved in a CSV file
+    named `round_data.csv`. It handles statistics like strikes, takedowns,
     control time, and more.
 """
 
