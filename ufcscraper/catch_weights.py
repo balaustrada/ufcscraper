@@ -22,6 +22,3 @@ class CatchWeights(BaseFileHandler):
     sort_fields = ["fight_id", "weight"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "catch_weights.csv"
-
-    def __init__(self, data_folder: Path):
-        self.data_folder = data_folder
