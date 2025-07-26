@@ -35,3 +35,4 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 ufcscraper_scrape_ufcstats_data = "ufcscraper.scripts.scrape_ufcstats_data:main"
 ufcscraper_scrape_bestfightodds_data = "ufcscraper.scripts.scrape_bestfightodds_data:main"
+ufcscraper_check_missing_records = "ufcscraper.scripts.check_missing_records:main"
