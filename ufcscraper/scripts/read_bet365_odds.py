@@ -29,7 +29,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         data_folder=args.data_folder,
     )
 
-    reader.scrape_odds()
+    reader.scrape_odds(locales=args.locales)
 
     
 def get_args() -> argparse.Namespace:
@@ -53,6 +53,13 @@ def get_args() -> argparse.Namespace:
         type=str,
         default="INFO",
         help="Logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL).",
+    )
+
+    parser.add_argument(
+        "--locales",
+        type=list,
+        default=["en_US.utf8", "es_ES.utf8"],
+        help="Locales to use for parsing numbers and dates.",
     )
 
     return parser.parse_args()

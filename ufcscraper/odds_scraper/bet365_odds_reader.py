@@ -9,15 +9,14 @@ Classes:
 from __future__ import annotations
 
 import csv
-from fuzzywuzzy import process, fuzz
-from pathlib import Path
+from locale import setlocale, LC_TIME
 import logging
-from bs4 import BeautifulSoup
-import pandas as pd
-from typing import TYPE_CHECKING
 from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-from tomlkit import table
+import pandas as pd
+from bs4 import BeautifulSoup
 
 from ufcscraper.base import BaseHTMLReader
 from ufcscraper.fighter_names import FighterNames
@@ -99,13 +98,15 @@ class Bet365OddsReader(BaseHTMLReader):
     #     else:
     #         return fighter_id
 
-    def scrape_odds(self) -> None:
+    def scrape_odds(self, locales:list[str] = ['en_US.utf8']) -> None:
         """
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
         soup = BeautifulSoup(self.read_html(), "lxml")
         table = soup.find_all("div", class_="gl-MarketGroupContainer")[-1]
         rows = table.find_all("div", recursive=False)
+
+        database_length = len(self.data)
 
         fights = {}
         for elem in rows[0].find_all("div", recursive=False):
@@ -118,12 +119,22 @@ class Bet365OddsReader(BaseHTMLReader):
 
                 # Correct format adding year
                 if len(datestr.split(" ")) == 3:
-                    datestr += "  " + str(self.html_datetime.year)
+                    datestr += " " + str(self.html_datetime.year)
                 elif len(datestr.split(" ")) == 4:
                     pass
                 else:
                     raise ValueError("Read invalid date format: ", datestr)
-                date = datetime.strptime(datestr, "%a %d %b %Y")
+
+                date = None
+                for loc in locales:
+                    try:
+                        setlocale(LC_TIME, loc)
+                        date = datetime.strptime(datestr, "%a %d %b %Y")
+                        logger.debug(f"Parsed date '{datestr}' with locale '{loc}'")
+                    except ValueError:
+                        pass
+                if date is None:
+                    raise ValueError(f"Could not parse date '{datestr}' with any locale: {locales}")
 
                 # If fight date month is lower than the HTML datetime month,
                 # it means the fight is in the next year.
@@ -152,23 +163,30 @@ class Bet365OddsReader(BaseHTMLReader):
             n = len(val)
             odds_dict[key] = odds[i : i + n]
             i += n
+        
+        # Prepare rows to be added
+        rows_to_add = []
+        for date in fights.keys():
+            for fight, odds in zip(fights[date], odds_dict[date]):
+                fighter, opponent = fight
+                fighter_odds, opponent_odds = odds
+                row = [
+                    self.html_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                    date.strftime("%Y-%m-%d"),
+                    fighter,
+                    opponent,
+                    fighter_odds,
+                    opponent_odds,
+                ]
+                rows_to_add.append(row)
+
+        logger.info(f"Rows to be written: {len(rows_to_add)}")
 
         with open(self.data_file, "a") as file:
             writer = csv.writer(file)
-
-            for date in fights.keys():
-                for fight, odds in zip(fights[date], odds_dict[date]):
-                    fighter, opponent = fight
-                    fighter_odds, opponent_odds = odds
-                    writer.writerow(
-                        [
-                            self.html_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-                            date.strftime("%Y-%m-%d"),
-                            fighter,
-                            opponent,
-                            fighter_odds,
-                            opponent_odds,
-                        ]
-                    )
+            for row in rows_to_add:
+                writer.writerow(row)
 
         self.remove_duplicates_from_file()
+        self.load_data()
+        logger.info(f"Rows added to database: {len(self.data) - database_length}")
