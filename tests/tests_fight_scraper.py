@@ -10,7 +10,7 @@ import requests
 
 import ufcscraper
 from ufcscraper.fight_scraper import *
-from ufcscraper.tests.tests_event_scraper import mock_get as mock_event_get
+from tests.tests_event_scraper import mock_get as mock_event_get
 
 THIS_DIR = Path(__file__).parent
 
