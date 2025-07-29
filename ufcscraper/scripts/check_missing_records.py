@@ -196,6 +196,6 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     args = get_args()
     main(args)
