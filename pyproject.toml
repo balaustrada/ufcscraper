@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ufcscraper"
 readme = "README.rst"
-version = "0.2.1"
+version = "1.0.0"
 description = "A data scraper for UFC stats and odds."
 authors = ["César Ramírez-Pérez"]
 
@@ -35,5 +35,6 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.scripts]
 ufcscraper_scrape_ufcstats_data = "ufcscraper.scripts.scrape_ufcstats_data:main"
 ufcscraper_scrape_bestfightodds_data = "ufcscraper.scripts.scrape_bestfightodds_data:main"
+ufcscraper_check_missing_records = "ufcscraper.scripts.check_missing_records:main"
 ufcscraper_read_bet365_odds = "ufcscraper.scripts.read_bet365_odds:main"
 ufcscraper_consolidate_bet365_odds = "ufcscraper.scripts.consolidate_bet365_odds:main"

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ufcscraper.base import BaseScraper
+from ufcscraper.catch_weights import CatchWeights
 from ufcscraper.event_scraper import EventScraper
 from ufcscraper.fight_scraper import FightScraper
 from ufcscraper.fighter_scraper import FighterScraper
@@ -59,18 +60,22 @@ class UFCScraper(BaseScraper):
         self.fighter_scraper = FighterScraper(self.data_folder, n_sessions, delay)
         self.fight_scraper = FightScraper(self.data_folder, n_sessions, delay)
         self.replacement_scraper = ReplacementScraper(self.data_folder)
+        self.catch_weights = CatchWeights(self.data_folder)
+
+        self.scrapers = [
+            self.event_scraper,
+            self.fighter_scraper,
+            self.fight_scraper,
+            self.replacement_scraper,
+            self.catch_weights,
+        ]
 
     def check_data_file(self) -> None:
         """Check the integrity of data files for all scrapers.
 
         This method iterates over all scrapers and verifies their data files.
         """
-        for scraper in [
-            self.event_scraper,
-            self.fighter_scraper,
-            self.fight_scraper,
-            self.fight_scraper.rounds_handler,
-        ]:
+        for scraper in self.scrapers:
             scraper.check_data_file()
 
     def load_data(self) -> None:
@@ -78,13 +83,7 @@ class UFCScraper(BaseScraper):
 
         This method iterates over all scrapers and loads their data.
         """
-        for scraper in [
-            self.event_scraper,
-            self.fighter_scraper,
-            self.fight_scraper,
-            self.fight_scraper.rounds_handler,
-            self.replacement_scraper,
-        ]:
+        for scraper in self.scrapers:
             scraper.load_data()
 
     def remove_duplicates_from_file(self) -> None:
@@ -92,13 +91,7 @@ class UFCScraper(BaseScraper):
 
         This method iterates over all scrapers and removes duplicates from their data files.
         """
-        for scraper in [
-            self.event_scraper,
-            self.fighter_scraper,
-            self.fight_scraper,
-            self.fight_scraper.rounds_handler,
-            self.replacement_scraper,
-        ]:
+        for scraper in self.scrapers:
             scraper.remove_duplicates_from_file()
 
     def scrape_fighters(self) -> None:
