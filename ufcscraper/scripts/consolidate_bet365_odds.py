@@ -1,6 +1,6 @@
 """
 This script will read raw Bet365 odds data and consolidate it into a structured format.
-It will create a CSV file with the consolidated odds data, ensuring that it is ready 
+It will create a CSV file with the consolidated odds data, ensuring that it is ready
 for further analysis or integration into a larger dataset.
 
 Usage
@@ -9,13 +9,14 @@ To run the script, use the following command:
 
 .. code-block:: bash
 
-    ufcscraper_consolidate_bet365_odds --data-folder /path/to/data 
+    ufcscraper_consolidate_bet365_odds --data-folder /path/to/data
 
 Arguments:
 -----------
 
 - **data-folder**: Specify the folder where the raw Bet365 odds data is stored.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,10 +25,15 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ufcscraper.odds_scraper.bet365_odds_reader import Bet365Odds, UpcomingBet365Odds
+from ufcscraper.odds_scraper.bet365_odds_reader import (
+    BaseBet365Odds,
+    Bet365Odds,
+    UpcomingBet365Odds,
+)
 
 if TYPE_CHECKING:
     from typing import Optional
+
 
 def get_args() -> argparse.Namespace:
     """
@@ -35,9 +41,11 @@ def get_args() -> argparse.Namespace:
 
     This function sets up the command-line argument parser and defines the arguments
     that can be passed to the script. It returns the parsed arguments as an `argparse.Namespace` object.
-    """ 
-    parser = argparse.ArgumentParser(description="Consolidate Bet365 odds data into a structured CSV file.")
-    
+    """
+    parser = argparse.ArgumentParser(
+        description="Consolidate Bet365 odds data into a structured CSV file."
+    )
+
     parser.add_argument(
         "--data-folder",
         type=Path,
@@ -72,8 +80,8 @@ def get_args() -> argparse.Namespace:
         help="If set, will consolidate odds for upcoming fights.",
     )
 
-    
     return parser.parse_args()
+
 
 def main(args: Optional[argparse.Namespace] = None) -> None:
     """
@@ -94,6 +102,8 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         format="%(levelname)s:%(message)s",
     )
 
+    bet365_odds_reader: BaseBet365Odds
+
     if args.upcoming:
         bet365_odds_reader = UpcomingBet365Odds(
             data_folder=args.data_folder,
@@ -107,6 +117,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         max_date_diff_days=args.max_date_diff_days,
         min_match_score=args.min_match_score,
     )
+
 
 if __name__ == "__main__":
     main()
