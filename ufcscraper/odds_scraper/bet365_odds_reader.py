@@ -180,46 +180,6 @@ class Bet365OddsReader(BaseHTMLReader):
         """
         super().__init__(html_file=html_file, data_folder=data_folder)
         self.fighter_names = FighterNames(data_folder)
-        # self._load_fighter_names_data()
-
-    # def _load_fighter_names_data(self) -> None:
-    #     """
-    #     Loads fighter names from the fighter_names handler.
-    #     """
-    #     self.fighter_names.load_data()
-    #     self.bet365_names = self.fighter_names.data[
-    #         self.fighter_names.data["database"] == "bet365"
-    #     ]
-    #     self.ufcstats_names = self.fighter_names.data[
-    #         self.fighter_names.data["database"] == "UFCStats"
-    #     ]
-
-    # def _get_fighter_id(self, name: str) -> str:
-    #     """
-    #     Retrieves the fighter ID for a given fighter name.
-
-    #     Args:
-    #         name (str): The name of the fighter.
-
-    #     Returns:
-    #         str: The fighter ID, or an empty string if not found.
-    #     """
-    #     fighter_id = self.fighter_names.check_fighter_id(name, "bet365")
-
-    #     if not fighter_id:
-    #         # If fighter not in database, try to find a close match in UFCStats
-    #         best_name, score = process.extractOne(
-    #             name,
-    #             self.ufcstats_names["name"].tolist(),
-    #             scorer=fuzz.token_sort_ratio,
-    #         )
-    #         if score > 90:
-    #             row = self.ufcstats_names[self.ufcstats_names["name"] == best_name].iloc[0]
-    #             return row["fighter_id"]
-    #         else:
-    #             logger.warning(f"Fighter ID not found for name: {name}")
-    #     else:
-    #         return fighter_id
 
     def scrape_odds(self, locales:list[str] = ['en_US.utf8']) -> None:
         """
