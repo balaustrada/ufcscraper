@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ufcscraper.odds_scraper.bet365_odds_reader import Bet365Odds
+from ufcscraper.odds_scraper.bet365_odds_reader import Bet365Odds, UpcomingBet365Odds
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -66,6 +66,12 @@ def get_args() -> argparse.Namespace:
         help="Minimum match score for fuzzy matching of fighter names.",
     )
 
+    parser.add_argument(
+        "--upcoming",
+        action="store_true",
+        help="If set, will consolidate odds for upcoming fights.",
+    )
+
     
     return parser.parse_args()
 
@@ -88,9 +94,14 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         format="%(levelname)s:%(message)s",
     )
 
-    from ufcscraper.odds_scraper.bet365_odds_reader import Bet365OddsReader
-
-    bet365_odds_reader = Bet365Odds(args.data_folder)
+    if args.upcoming:
+        bet365_odds_reader = UpcomingBet365Odds(
+            data_folder=args.data_folder,
+        )
+    else:
+        bet365_odds_reader = Bet365Odds(
+            data_folder=args.data_folder,
+        )
 
     bet365_odds_reader.consolidate_odds(
         max_date_diff_days=args.max_date_diff_days,

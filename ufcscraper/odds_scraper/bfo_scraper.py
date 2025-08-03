@@ -14,6 +14,7 @@ Classes:
 
 from __future__ import annotations
 
+from abc import ABC
 import csv
 import datetime
 import logging
@@ -42,8 +43,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-
-class BestFightOddsScraper(BaseScraper):
+class BaseBestFightOddsScraper(BaseScraper, ABC):
     """A scraper for Best Fight Odds data.
 
     This class is responsible for scraping betting odds data for fighters
@@ -55,8 +55,8 @@ class BestFightOddsScraper(BaseScraper):
         max_exception_retries: Maximum number of retries for failed
             requests.
         wait_time: Time to wait for elements to load.
+        upcoming: Boolean indicating if the scraper is for upcoming fights.
     """
-
     dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "fight_id": str,
         "fighter_id": str,
@@ -66,12 +66,12 @@ class BestFightOddsScraper(BaseScraper):
     }
     sort_fields = ["fight_id", "fighter_id"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
-    filename = "BestFightOdds_odds.csv"
     n_sessions = 1  # New default value
     min_score = 90
     max_exception_retries = 3
     wait_time = 20
     web_url = "https://www.bestfightodds.com"
+    upcoming: bool
 
     def __init__(
         self,
@@ -545,7 +545,11 @@ class BestFightOddsScraper(BaseScraper):
         ufc_stats_data = UFCScraper(self.data_folder)
 
         events = ufc_stats_data.event_scraper.data
-        fights = ufc_stats_data.fight_scraper.data
+
+        if self.upcoming:
+            fights = ufc_stats_data.upcoming_fight_scraper.data
+        else:
+            fights = ufc_stats_data.fight_scraper.data
 
         fighters_object = ufc_stats_data.fighter_scraper
         fighters_object.add_name_column()
@@ -941,3 +945,17 @@ class BestFightOddsScraper(BaseScraper):
 
         self.fighter_names.remove_duplicates_from_file()
         self.remove_duplicates_from_file()
+
+class BestFightOddsScraper(BaseBestFightOddsScraper):
+    filename = "BestFightOdds_odds.csv"
+    upcoming = False
+
+class UpcomingBestFightOddsScraper(BestFightOddsScraper):
+    """A scraper for upcoming Best Fight Odds data.
+
+    This class extends the BestFightOddsScraper to focus on scraping
+    upcoming fight odds data. It inherits all functionalities from the
+    parent class and can be used to scrape odds for future fights.
+    """
+    filename = "upcoming_BestFightOdds_odds.csv"
+    upcoming = True

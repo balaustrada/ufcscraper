@@ -8,6 +8,7 @@ Classes:
 
 from __future__ import annotations
 
+from abc import ABC
 import csv
 from locale import setlocale, LC_TIME
 import logging
@@ -29,11 +30,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Bet365Odds(BaseFileHandler):
+class BaseBet365Odds(BaseFileHandler, ABC):
     """
     Class to handle Bet365 odds data associated with existing fights.
     """
-    
+
     dtypes: Dict[str, type | pd.core.arrays.integer.Int64Dtype] = {
         "scrape_datetime": "datetime64[ns]",
         "fight_id": "datetime64[ns]",
@@ -43,10 +44,11 @@ class Bet365Odds(BaseFileHandler):
 
     sort_fields = ["scrape_datetime", "fight_id", "fighter_id", "odds"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
-    filename = "bet365_odds.csv"
+    upcoming: bool
 
-
-    def consolidate_odds(self, max_date_diff_days: int = 3, min_match_score: int = 90) -> None:
+    def consolidate_odds(
+        self, max_date_diff_days: int = 3, min_match_score: int = 90
+    ) -> None:
         """
         Read raw Bet365 odds data and consolidate it into a structured format.
 
@@ -57,11 +59,20 @@ class Bet365Odds(BaseFileHandler):
         scraper = UFCScraper(self.data_folder)
         odds = pd.read_csv(self.data_folder / "bet365_odds_raw.csv")
 
-        fight_data = scraper.fight_scraper.data
         fighter_data = scraper.fighter_scraper.data
-        event_data = scraper.event_scraper.data
-    
-        fighter_data["fighter_full_name"] = fighter_data["fighter_f_name"] + " " + fighter_data["fighter_l_name"]
+
+        if self.upcoming:
+            fight_data = scraper.upcoming_fight_scraper.data
+            event_data = scraper.upcoming_event_scraper.data
+
+        else:
+            fight_data = scraper.fight_scraper.data
+            fighter_data = scraper.fighter_scraper.data
+            event_data = scraper.event_scraper.data
+
+        fighter_data["fighter_full_name"] = (
+            fighter_data["fighter_f_name"] + " " + fighter_data["fighter_l_name"]
+        )
 
         fight_data = pd.concat(
             [
@@ -78,20 +89,26 @@ class Bet365Odds(BaseFileHandler):
             fight_data.merge(
                 fighter_data[["fighter_id", "fighter_full_name"]],
                 on="fighter_id",
-            )
-            .merge(event_data[["event_id", "event_date"]], on="event_id")
-        )[[
-            "fight_id",
-            "fighter_id",
-            "fighter_full_name",
-            "event_date",
-        ]]
+            ).merge(event_data[["event_id", "event_date"]], on="event_id")
+        )[
+            [
+                "fight_id",
+                "fighter_id",
+                "fighter_full_name",
+                "event_date",
+            ]
+        ]
 
         odds = pd.concat(
             [
                 odds[["html_datetime", "fight_date", "fighter_name", "fighter_odds"]],
-                odds[["html_datetime", "fight_date", "opponent_name", "opponent_odds"]].rename(
-                    columns={"opponent_name": "fighter_name", "opponent_odds": "fighter_odds"}
+                odds[
+                    ["html_datetime", "fight_date", "opponent_name", "opponent_odds"]
+                ].rename(
+                    columns={
+                        "opponent_name": "fighter_name",
+                        "opponent_odds": "fighter_odds",
+                    }
                 ),
             ]
         )
@@ -127,7 +144,9 @@ class Bet365Odds(BaseFileHandler):
         )
         # Compute fuzzy match score
         merged["match_score"] = merged.apply(
-            lambda row: fuzz.token_set_ratio(row["fighter_name"], row["fighter_full_name"]),
+            lambda row: fuzz.token_set_ratio(
+                row["fighter_name"], row["fighter_full_name"]
+            ),
             axis=1,
         )
         best_matches = merged.loc[merged.groupby("odds_row_id")["match_score"].idxmax()]
@@ -138,7 +157,9 @@ class Bet365Odds(BaseFileHandler):
                 f"Low match score ({row['match_score']}) for '{row['fighter_name']}' vs '{row['fighter_full_name']}'"
             )
 
-        final_data = best_matches[["html_datetime", "fight_id", "fighter_id", "fighter_odds"]].rename(
+        final_data = best_matches[
+            ["html_datetime", "fight_id", "fighter_id", "fighter_odds"]
+        ].rename(
             columns={
                 "html_datetime": "scrape_datetime",
                 "fighter_odds": "odds",
@@ -150,6 +171,7 @@ class Bet365Odds(BaseFileHandler):
         final_data.to_csv(self.data_file, index=False)
         self.remove_duplicates_from_file()
         logger.info(f"Consolidated Bet365 odds data saved to {self.data_file}")
+
 
 class Bet365OddsReader(BaseHTMLReader):
     """
@@ -165,7 +187,14 @@ class Bet365OddsReader(BaseHTMLReader):
         "opponent_odds": float,
     }
 
-    sort_fields = ["html_datetime", "fight_date", "fighter_name", "opponent_name", "fighter_odds", "opponent_odds"]
+    sort_fields = [
+        "html_datetime",
+        "fight_date",
+        "fighter_name",
+        "opponent_name",
+        "fighter_odds",
+        "opponent_odds",
+    ]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "bet365_odds_raw.csv"
 
@@ -181,7 +210,7 @@ class Bet365OddsReader(BaseHTMLReader):
         super().__init__(html_file=html_file, data_folder=data_folder)
         self.fighter_names = FighterNames(data_folder)
 
-    def scrape_odds(self, locales:list[str] = ['en_US.utf8']) -> None:
+    def scrape_odds(self, locales: list[str] = ["en_US.utf8"]) -> None:
         """
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
@@ -217,7 +246,9 @@ class Bet365OddsReader(BaseHTMLReader):
                     except ValueError:
                         pass
                 if date is None:
-                    raise ValueError(f"Could not parse date '{datestr}' with any locale: {locales}")
+                    raise ValueError(
+                        f"Could not parse date '{datestr}' with any locale: {locales}"
+                    )
 
                 # If fight date month is lower than the HTML datetime month,
                 # it means the fight is in the next year.
@@ -249,7 +280,7 @@ class Bet365OddsReader(BaseHTMLReader):
             n = len(val)
             odds_dict[key] = odds[i : i + n]
             i += n
-        
+
         # Prepare rows to be added
         rows_to_add = []
         for date in fights.keys():
@@ -276,3 +307,11 @@ class Bet365OddsReader(BaseHTMLReader):
         self.remove_duplicates_from_file()
         self.load_data()
         logger.info(f"Rows added to database: {len(self.data) - database_length}")
+
+class UpcomingBet365Odds(BaseBet365Odds):
+    filename = "upcoming_bet365_odds.csv"
+    upcoming = True
+
+class Bet365Odds(BaseBet365Odds):
+    filename = "bet365_odds.csv"
+    upcoming = False
