@@ -13,7 +13,7 @@ from locale import setlocale, LC_TIME
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 from fuzzywuzzy import fuzz
 import pandas as pd
@@ -24,7 +24,7 @@ from ufcscraper.fighter_names import FighterNames
 from ufcscraper.ufc_scraper import UFCScraper
 
 if TYPE_CHECKING:
-    from typing import Dict
+    from typing import Dict, List
 
 
 logger = logging.getLogger(__name__)
@@ -191,7 +191,7 @@ class Bet365OddsReader(BaseHTMLReader):
 
         database_length = len(self.data)
 
-        fights = {}
+        fights: Dict[datetime, List[List[str]]] = {}
         for elem in rows[0].find_all("div", recursive=False):
             if not elem.text:
                 continue
@@ -232,6 +232,9 @@ class Bet365OddsReader(BaseHTMLReader):
                     "div", class_="src-ParticipantFixtureDetailsHigher_TeamWrapper"
                 ):
                     fighters.append(fighter.text.strip())
+
+                if not date:
+                    raise ValueError("No date found for fighters: ", fighters)
                 fights[date].append(fighters)
 
         odds = []
