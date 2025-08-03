@@ -26,7 +26,7 @@ if TYPE_CHECKING:  # pragma: no cover
 logger = logging.getLogger(__name__)
 
 
-class ReplacementScraper(BaseScraper): # pragma: no cover
+class ReplacementScraper(BaseScraper):  # pragma: no cover
     """Scrapes fighter replacement data from the BetMMA.tips website.
 
     This class inherits from `BaseScraper` and is responsible for scraping
@@ -149,9 +149,7 @@ class ReplacementScraper(BaseScraper): # pragma: no cover
 
         # First we merge between tables to get the information we want
         ufc_data = (
-            fight_scraper.data[
-                ["fight_id", "event_id", "fighter_1", "fighter_2"]
-            ]
+            fight_scraper.data[["fight_id", "event_id", "fighter_1", "fighter_2"]]
             .merge(
                 fighter_scraper.data[["fighter_id", "fighter_name"]],
                 left_on="fighter_1",

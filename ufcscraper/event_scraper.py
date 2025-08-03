@@ -3,8 +3,8 @@ This module contains the `EventScraper` class, which is responsible for scraping
 event data from the UFCStats website.
 
 The `EventScraper` class inherits from `BaseScraper` and provides functionality
-to retrieve and process event details such as event name, date, city, state, and 
-country. The scraped data is stored in a CSV file (`event_data.csv`) and can be 
+to retrieve and process event details such as event name, date, city, state, and
+country. The scraped data is stored in a CSV file (`event_data.csv`) and can be
 used for further analysis.
 """
 
@@ -13,7 +13,7 @@ from __future__ import annotations
 import csv
 import datetime
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import pandas as pd
 
@@ -45,6 +45,7 @@ class EventScraper(BaseScraper):
     sort_fields = ["event_date", "event_name"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "event_data.csv"
+    event_type = "completed"
 
     @classmethod
     def url_from_id(cls, id_: str) -> str:
@@ -126,7 +127,9 @@ class EventScraper(BaseScraper):
         """
         logger.info("Scraping event links...")
 
-        soup = link_to_soup(f"{self.web_url}/statistics/events/completed?page=all")
+        soup = link_to_soup(
+            f"{self.web_url}/statistics/events/{self.event_type}?page=all"
+        )
 
         # Adds href to list if href contains a link with keyword 'event-details'
         event_urls = [
@@ -137,3 +140,40 @@ class EventScraper(BaseScraper):
 
         logger.info(f"Got {len(event_urls)} event links...")
         return event_urls
+    
+    def get_fight_urls_from_event_urls(self, event_urls: List[str]) -> List[str]:
+        """Extracts fight URLs from a list of event URLs.
+
+        Args:
+            event_urls: A list of event URLs from which to extract fight URLs.
+
+        Returns:
+            A list of fight URLs extracted from the provided event URLs.
+        """
+        fight_urls = set()
+        i = 1
+        for _, soup in links_to_soups(event_urls, self.n_sessions):
+            for item in soup.find_all("a", class_="b-flag b-flag_style_green"):
+                fight_urls.add(item.get("href"))
+            for item in soup.find_all("a", class_="b-flag b-flag_style_bordered"):
+                fight_urls.add(item.get("href"))
+            print(f"Scraped {i}/{len(event_urls)} events...", end="\r")
+            i += 1
+
+        return list(fight_urls)
+
+class UpcomingEventScraper(EventScraper):
+    filename = "upcoming_event_data.csv"
+    event_type = "upcoming"
+
+    def get_fight_urls_from_event_urls(self, event_urls: List[str]) -> List[str]:
+        fight_urls = set()
+        i = 1
+        for _, soup in links_to_soups(event_urls, self.n_sessions):
+            for item in soup.find_all("a", class_="b-link b-link_style_black"):
+                if "View" in item.get_text() and "Matchup" in item.get_text():
+                    fight_urls.add(item.get("data-link"))
+            print(f"Scraped {i}/{len(event_urls)} events...", end="\r")
+            i += 1
+        
+        return list(fight_urls)

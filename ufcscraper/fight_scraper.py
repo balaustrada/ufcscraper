@@ -1,31 +1,31 @@
 """
-This module defines classes for scraping fight and round data from the UFCStats 
+This module defines classes for scraping fight and round data from the UFCStats
 website.
 
 Classes:
-    FightScraper: Inherits from `BaseScraper` and is responsible for scraping 
-    detailed fight statistics, such as fighter information, results, referees, 
-    and more. The data is stored in a CSV file named `fight_data.csv`. It also 
-    interacts with the `RoundsHandler` to scrape and store round-specific 
+    FightScraper: Inherits from `BaseScraper` and is responsible for scraping
+    detailed fight statistics, such as fighter information, results, referees,
+    and more. The data is stored in a CSV file named `fight_data.csv`. It also
+    interacts with the `RoundsHandler` to scrape and store round-specific
     statistics.
-    
-    RoundsHandler: Inherits from `BaseFileHandler` and manages the collection 
-    and storage of round-specific fight data. The data is saved in a CSV file 
-    named `round_data.csv`. It handles statistics like strikes, takedowns, 
+
+    RoundsHandler: Inherits from `BaseFileHandler` and manages the collection
+    and storage of round-specific fight data. The data is saved in a CSV file
+    named `round_data.csv`. It handles statistics like strikes, takedowns,
     control time, and more.
 """
 
 from __future__ import annotations
 
+from abc import ABC
 import csv
 import logging
 import re
 from typing import TYPE_CHECKING
-
 import pandas as pd
 
 from ufcscraper.base import BaseScraper, BaseFileHandler
-from ufcscraper.event_scraper import EventScraper
+from ufcscraper.event_scraper import EventScraper, UpcomingEventScraper
 from ufcscraper.fighter_scraper import FighterScraper
 from ufcscraper.utils import links_to_soups
 
@@ -35,8 +35,135 @@ if TYPE_CHECKING:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+class BaseFightScraper(BaseScraper, ABC):
+    """Base class for fight scrapers.
 
-class FightScraper(BaseScraper):
+    This class provides the basic functionality to scrape fight data from the UFCStats
+    it should be inherited by specific fight scraper classes.
+    """
+    event_scraper = EventScraper
+
+    @classmethod
+    def url_from_id(cls, id_: str) -> str:
+        """Constructs the fight URL using the fight ID.
+
+        Args:
+            id_: The unique identifier for the fight.
+
+        Returns:
+            The full URL to the fight's details page on UFCStats.
+        """
+        return f"{cls.web_url}/fight-details/{id_}"
+    
+    def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
+        """Retrieves URLs of all fights from UFCStats.
+
+        Args:
+            get_all_events: If False, only gets URLs for fights from events
+                not already scraped.
+
+        Returns:
+            A list of URLs for fights.
+        """
+        logger.info("Scraping fight links...")
+
+        logger.info("Opening event information to extract event urls...")
+        event_scraper_instance = self.event_scraper(self.data_folder, self.n_sessions, self.delay)
+        event_ids = event_scraper_instance.data["event_id"].unique().tolist()
+
+        # Remove events for which information is extracted
+        if not get_all_events:
+            event_ids = [
+                id_
+                for id_ in event_ids
+                if id_ not in self.data["event_id"].unique().tolist()
+            ]
+
+        event_urls: List[str] = list(map(self.event_scraper.url_from_id, event_ids))
+        fight_urls = event_scraper_instance.get_fight_urls_from_event_urls(event_urls)
+
+        logger.info(f"Got {len(fight_urls)} fight links...")
+        return list(fight_urls)
+
+    @staticmethod
+    def get_fighters(
+        fight_details: bs4.element.ResultSet, fight_soup: bs4.BeautifulSoup
+    ) -> Tuple[str, str]:
+        """Extracts fighter IDs from the fight details.
+
+        Args:
+            fight_details: A ResultSet containing fight detail information.
+            fight_soup: The BeautifulSoup object containing the fight page.
+
+        Returns:
+            A tuple containing the IDs of the two fighters.
+        """
+        # Scrape both fighter names
+        try:
+            fighters = (
+                fight_details[0].select("a.b-link.b-link_style_black")[0]["href"],
+                fight_details[1].select("a.b-link.b-link_style_black")[0]["href"],
+            )
+        except:  # pragma: no cover
+            fighters = (
+                fight_soup.select("a.b-fight-details__person-link")[0]["href"],
+                fight_soup.select("a.b-fight-details__person-link")[1]["href"],
+            )
+
+        fighter_1, fighter_2 = map(
+            FighterScraper.id_from_url,
+            fighters,
+        )
+
+        return fighter_1, fighter_2
+
+    # Checks if fight is title fight
+    @staticmethod
+    def get_title_fight(fight_type: bs4.element.ResultSet) -> str:
+        """Determines if the fight is a title fight.
+
+        Args:
+            fight_type: A ResultSet containing fight type information.
+
+        Returns:
+            'T' if it's a title fight, 'F' otherwise.
+        """
+        if "Title" in fight_type[0].text:
+            return "T"
+        else:
+            return "F"
+
+    # Scrapes weight class of fight
+    @staticmethod
+    def get_weight_class(fight_type: bs4.element.ResultSet) -> str:
+        """Extracts the weight class of the fight.
+
+        Args:
+            fight_type: A ResultSet containing fight type information.
+
+        Returns:
+            The weight class of the fight, or '' if not found.
+        """
+        if "Light Heavyweight" in fight_type[0].text.strip():
+            return "Light Heavyweight"
+
+        elif "Women" in fight_type[0].text.strip():
+            return "Women's " + re.findall(r"\w*weight", fight_type[0].text.strip())[0]
+
+        elif "Catch Weight" in fight_type[0].text.strip():
+            return "Catch Weight"
+
+        elif "Open Weight" in fight_type[0].text.strip():
+            return "Open Weight"
+
+        else:
+            try:
+                return re.findall(r"\w*weight", fight_type[0].text.strip())[0]
+            except:
+                return ""
+
+    
+class FightScraper(BaseFightScraper):
     """Scrapes fight data from the UFCStats website.
 
     This class inherits from `BaseScraper` and handles scraping detailed
@@ -79,18 +206,6 @@ class FightScraper(BaseScraper):
 
         self.rounds_handler = RoundsHandler(self.data_folder)
 
-    @classmethod
-    def url_from_id(cls, id_: str) -> str:
-        """Constructs the fight URL using the fight ID.
-
-        Args:
-            id_: The unique identifier for the fight.
-
-        Returns:
-            The full URL to the fight's details page on UFCStats.
-        """
-        return f"{cls.web_url}/fight-details/{id_}"
-
     def scrape_fights(self, get_all_events: bool = False) -> None:
         """Scrapes fight data and saves it to CSV files.
 
@@ -129,7 +244,7 @@ class FightScraper(BaseScraper):
                     win_lose = soup.select("i.b-fight-details__person-status")
 
                     if soup.h2 is not None:
-                        event_id = EventScraper.id_from_url(
+                        event_id = self.event_scraper.id_from_url(
                             str(soup.h2.select("a.b-link")[0]["href"])
                         )
                     else:
@@ -206,45 +321,6 @@ class FightScraper(BaseScraper):
         self.remove_duplicates_from_file()
         self.rounds_handler.remove_duplicates_from_file()
 
-    def get_fight_urls(self, get_all_events: bool = False) -> List[str]:
-        """Retrieves URLs of all fights from UFCStats.
-
-        Args:
-            get_all_events: If False, only gets URLs for fights from events
-                not already scraped.
-
-        Returns:
-            A list of URLs for fights.
-        """
-        logger.info("Scraping fight links...")
-
-        logger.info("Opening event information to extract event urls...")
-        event_scraper = EventScraper(self.data_folder, self.n_sessions, self.delay)
-        event_ids = event_scraper.data["event_id"].unique().tolist()
-
-        # Remove events for which information is extracted
-        if not get_all_events:
-            event_ids = [
-                id_
-                for id_ in event_ids
-                if id_ not in self.data["event_id"].unique().tolist()
-            ]
-
-        event_urls: List[str] = list(map(EventScraper.url_from_id, event_ids))
-
-        fight_urls = set()
-        i = 0
-        for _, soup in links_to_soups(event_urls, self.n_sessions):
-            for item in soup.find_all("a", class_="b-flag b-flag_style_green"):
-                fight_urls.add(item.get("href"))
-            for item in soup.find_all("a", class_="b-flag b-flag_style_bordered"):
-                fight_urls.add(item.get("href"))
-            print(f"Scraped {i}/{len(event_urls)} events...", end="\r")
-            i += 1
-
-        logger.info(f"Got {len(fight_urls)} fight links...")
-        return list(fight_urls)
-
     @staticmethod
     def get_referee(overview: bs4.element.ResultSet) -> str:
         """Extracts the referee's name from the fight overview.
@@ -259,38 +335,6 @@ class FightScraper(BaseScraper):
             return overview[3].text.split(":")[1]
         except:
             return ""
-
-    @staticmethod
-    def get_fighters(
-        fight_details: bs4.element.ResultSet, fight_soup: bs4.BeautifulSoup
-    ) -> Tuple[str, str]:
-        """Extracts fighter IDs from the fight details.
-
-        Args:
-            fight_details: A ResultSet containing fight detail information.
-            fight_soup: The BeautifulSoup object containing the fight page.
-
-        Returns:
-            A tuple containing the IDs of the two fighters.
-        """
-        # Scrape both fighter names
-        try:
-            fighters = (
-                fight_details[0].select("a.b-link.b-link_style_black")[0]["href"],
-                fight_details[1].select("a.b-link.b-link_style_black")[0]["href"],
-            )
-        except:  # pragma: no cover
-            fighters = (
-                fight_soup.select("a.b-fight-details__person-link")[0]["href"],
-                fight_soup.select("a.b-fight-details__person-link")[1]["href"],
-            )
-
-        fighter_1, fighter_2 = map(
-            FighterScraper.id_from_url,
-            fighters,
-        )
-
-        return fighter_1, fighter_2
 
     # Scrape name of winner
     @staticmethod
@@ -321,51 +365,6 @@ class FightScraper(BaseScraper):
             return fighter_2
         else:
             return ""
-
-    # Checks if fight is title fight
-    @staticmethod
-    def get_title_fight(fight_type: bs4.element.ResultSet) -> str:
-        """Determines if the fight is a title fight.
-
-        Args:
-            fight_type: A ResultSet containing fight type information.
-
-        Returns:
-            'T' if it's a title fight, 'F' otherwise.
-        """
-        if "Title" in fight_type[0].text:
-            return "T"
-        else:
-            return "F"
-
-    # Scrapes weight class of fight
-    @staticmethod
-    def get_weight_class(fight_type: bs4.element.ResultSet) -> str:
-        """Extracts the weight class of the fight.
-
-        Args:
-            fight_type: A ResultSet containing fight type information.
-
-        Returns:
-            The weight class of the fight, or '' if not found.
-        """
-        if "Light Heavyweight" in fight_type[0].text.strip():
-            return "Light Heavyweight"
-
-        elif "Women" in fight_type[0].text.strip():
-            return "Women's " + re.findall(r"\w*weight", fight_type[0].text.strip())[0]
-
-        elif "Catch Weight" in fight_type[0].text.strip():
-            return "Catch Weight"
-
-        elif "Open Weight" in fight_type[0].text.strip():
-            return "Open Weight"
-
-        else:
-            try:
-                return re.findall(r"\w*weight", fight_type[0].text.strip())[0]
-            except:
-                return ""
 
     # Checks gender of fight
     @staticmethod
@@ -467,6 +466,83 @@ class FightScraper(BaseScraper):
 
         return "", ""
 
+class UpcomingFightScraper(BaseFightScraper):
+    """Scrapes fight data for upcoming events from the UFCStats website.
+
+    This class inherits from `FightScraper` and is specifically designed to
+    scrape fight data for upcoming events. It uses the `UpcomingEventScraper`
+    to get event URLs and then scrapes fight details from those events.
+    """
+    dtypes: Dict[str, type] = {
+        "fight_id": str,
+        "event_id": str,
+        "fighter_1": str,
+        "fighter_2": str,
+        "title_fight": str,
+        "weight_class": str,
+    }
+    sort_fields = ["event_id", "fight_id"]
+    data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
+    filename = "upcoming_fight_data.csv"
+    event_scraper = UpcomingEventScraper
+
+    def scrape_fights(self) -> None:
+        """Scrapes fight data and saves it to CSV files.
+
+        This method scrapes fight details and saves them to a CSV file.
+        """
+        existing_urls = set(map(self.url_from_id, self.data["fight_id"]))
+        ufcstats_fight_urls = set(self.get_fight_urls(get_all_events=True))
+
+        urls_to_scrape = ufcstats_fight_urls - existing_urls
+        urls_to_remove = existing_urls - ufcstats_fight_urls
+
+        if urls_to_remove:
+            logger.info(f"Removing {len(urls_to_remove)} outdated fight URLs...")
+            self.remove_rows_from_table(list(urls_to_remove))
+        
+        logger.info(f"Scraping {len(urls_to_scrape)} fights...")
+
+        with open(self.data_file, "a") as f_fights:
+            writer = csv.writer(f_fights)
+            for i, (url, soup) in enumerate(
+                links_to_soups(list(urls_to_scrape), self.n_sessions, self.delay)
+            ):
+                try:
+                    fight_details = soup.select("p.b-fight-details__table-text")
+                    fight_type = soup.select("i.b-fight-details__fight-title")
+
+                    if soup.h2 is not None:
+                        event_id = self.event_scraper.id_from_url(
+                            str(soup.h2.select("a.b-link")[0]["href"])
+                        )
+                    else:
+                        raise TypeError("Couldn't find header in the soup.")
+
+                    fighter_1, fighter_2 = self.get_fighters(fight_details, soup)
+                    title_fight = self.get_title_fight(fight_type)
+                    fight_id = self.id_from_url(url)
+                    weight_class = self.get_weight_class(fight_type)
+
+                    writer.writerow(
+                        [fight_id, event_id, fighter_1, fighter_2, title_fight, weight_class]
+                    )
+
+                    logger.info(f"Scraped {i+1}/{len(urls_to_scrape)} fights...")
+                except Exception as e:
+                    logger.error(f"Error saving data from url: {url}\nError: {e}")
+        
+        self.remove_duplicates_from_file()
+
+    def remove_rows_from_table(self, fight_ids: List[str]) -> None:
+        """Removes rows from the fight data table based on fight IDs.
+
+        Args:
+            fight_ids: A list of fight IDs to be removed from the data.
+        """
+        self.data = self.data[~self.data["fight_id"].isin(fight_ids)]
+        self.data.to_csv(self.data_file, index=False)
+        self.remove_duplicates_from_file()
 
 class RoundsHandler(BaseFileHandler):
     """Handles the manipulation and storage of round statistics.
