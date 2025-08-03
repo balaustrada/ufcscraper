@@ -75,6 +75,14 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     logger.info(f"Scraping fights...")
     scraper.fight_scraper.scrape_fights()
 
+    logger.info("")
+    logger.info(f"Scraping upcoming events...")
+    scraper.upcoming_event_scraper.scrape_events()
+
+    logger.info("")
+    logger.info(f"Scraping upcoming fights...")
+    scraper.upcoming_fight_scraper.scrape_fights()
+
     if args.scrape_replacements:
         logger.info("")
         logger.info(f"Scraping replacements...")

@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from ufcscraper.base import BaseScraper
 from ufcscraper.catch_weights import CatchWeights
-from ufcscraper.event_scraper import EventScraper
-from ufcscraper.fight_scraper import FightScraper
+from ufcscraper.event_scraper import EventScraper, UpcomingEventScraper
+from ufcscraper.fight_scraper import FightScraper, UpcomingFightScraper
 from ufcscraper.fighter_scraper import FighterScraper
 from ufcscraper.replacement_scraper import ReplacementScraper
 
@@ -57,15 +57,23 @@ class UFCScraper(BaseScraper):
         self.delay = delay or self.delay
 
         self.event_scraper = EventScraper(self.data_folder, n_sessions, delay)
+        self.upcoming_event_scraper = UpcomingEventScraper(
+            self.data_folder, n_sessions, delay
+        )
         self.fighter_scraper = FighterScraper(self.data_folder, n_sessions, delay)
         self.fight_scraper = FightScraper(self.data_folder, n_sessions, delay)
+        self.upcoming_fight_scraper = UpcomingFightScraper(
+            self.data_folder, n_sessions, delay
+        )
         self.replacement_scraper = ReplacementScraper(self.data_folder)
         self.catch_weights = CatchWeights(self.data_folder)
 
         self.scrapers = [
             self.event_scraper,
+            self.upcoming_event_scraper,
             self.fighter_scraper,
             self.fight_scraper,
+            self.upcoming_fight_scraper,
             self.replacement_scraper,
             self.catch_weights,
         ]
