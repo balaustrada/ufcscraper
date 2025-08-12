@@ -544,12 +544,12 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         logger.info("Loading UFCStats data...")
         ufc_stats_data = UFCScraper(self.data_folder)
 
-        events = ufc_stats_data.event_scraper.data
-
         if self.upcoming:
+            events = ufc_stats_data.upcoming_event_scraper.data
             fights = ufc_stats_data.upcoming_fight_scraper.data
         else:
             fights = ufc_stats_data.fight_scraper.data
+            events = ufc_stats_data.event_scraper.data
 
         fighters_object = ufc_stats_data.fighter_scraper
         fighters_object.add_name_column()
@@ -757,8 +757,8 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
 
             if len(candidates_indxs) == 0:
                 logger.info(
-                    f"Unable to find opponent {row['opponent_UFC_names'][0]} for "
-                    f"{row['UFC_names'][0]} on {date}"
+                    f"Unable to find opponent {row['opponent_UFC_names']} for "
+                    f"{row['UFC_names']} on {date}"
                 )
             else:
                 possible_opponents = [opponents_BFO_names[i] for i in candidates_indxs]
