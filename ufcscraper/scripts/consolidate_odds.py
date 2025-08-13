@@ -25,11 +25,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ufcscraper.odds_scraper.bet365_odds_reader import (
-    BaseBet365Odds,
-    Bet365Odds,
-    UpcomingBet365Odds,
-)
+from ufcscraper.odds_reader import BaseOdds, Odds, UpcomingOdds
 
 if TYPE_CHECKING:
     from typing import Optional
@@ -102,21 +98,23 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         format="%(levelname)s:%(message)s",
     )
 
-    bet365_odds_reader: BaseBet365Odds
+    odds: BaseOdds
 
     if args.upcoming:
-        bet365_odds_reader = UpcomingBet365Odds(
+        odds = UpcomingOdds(
             data_folder=args.data_folder,
         )
     else:
-        bet365_odds_reader = Bet365Odds(
+        odds = Odds(
             data_folder=args.data_folder,
         )
 
-    bet365_odds_reader.consolidate_odds(
-        max_date_diff_days=args.max_date_diff_days,
-        min_match_score=args.min_match_score,
-    )
+    for betting_house in ["Bet365"]:
+        odds.consolidate_odds(
+            betting_house=betting_house,
+            max_date_diff_days=args.max_date_diff_days,
+            min_match_score=args.min_match_score,
+        )
 
 
 if __name__ == "__main__":

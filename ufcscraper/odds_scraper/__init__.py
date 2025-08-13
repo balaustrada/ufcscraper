@@ -1,2 +1,1 @@
 from .bfo_scraper import BestFightOddsScraper, UpcomingBestFightOddsScraper
-from .bet365_odds_reader import Bet365OddsReader, Bet365Odds, UpcomingBet365Odds

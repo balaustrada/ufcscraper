@@ -163,7 +163,7 @@ class EventScraper(BaseScraper):
         return list(fight_urls)
 
 class UpcomingEventScraper(EventScraper):
-    filename = "upcoming_event_data.csv"
+    filename = "upcoming/event_data.csv"
     event_type = "upcoming"
 
     def get_fight_urls_from_event_urls(self, event_urls: List[str]) -> List[str]:

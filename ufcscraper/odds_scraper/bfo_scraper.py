@@ -957,5 +957,5 @@ class UpcomingBestFightOddsScraper(BestFightOddsScraper):
     upcoming fight odds data. It inherits all functionalities from the
     parent class and can be used to scrape odds for future fights.
     """
-    filename = "upcoming_BestFightOdds_odds.csv"
+    filename = "upcoming/BestFightOdds_odds.csv"
     upcoming = True

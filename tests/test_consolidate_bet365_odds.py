@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from ufcscraper.scripts import consolidate_bet365_odds
+from ufcscraper.scripts import consolidate_odds
 
 class TestConsolidateBet365Odds(unittest.TestCase):
     @patch("ufcscraper.scripts.consolidate_bet365_odds.Bet365Odds")
@@ -12,7 +12,7 @@ class TestConsolidateBet365Odds(unittest.TestCase):
         args.min_match_score = 80
         args.log_level = "INFO"
 
-        consolidate_bet365_odds.main(args)
+        consolidate_odds.main(args)
         MockBet365Odds.assert_called_once_with("dummy_folder")
         mock_reader.consolidate_odds.assert_called_once_with(
             max_date_diff_days=5,
@@ -30,7 +30,7 @@ class TestConsolidateBet365Odds(unittest.TestCase):
         mock_args.log_level = "INFO"
         mock_parse_args.return_value = mock_args
 
-        consolidate_bet365_odds.main(None)
+        consolidate_odds.main(None)
         mock_reader.consolidate_odds.assert_called_once_with(
             max_date_diff_days=3,
             min_match_score=90,

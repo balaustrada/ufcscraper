@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import locale
 import logging
 import multiprocessing
 import re
 import time
-from typing import TYPE_CHECKING
+from collections import Counter
+from datetime import date, datetime
+from typing import TYPE_CHECKING, Optional
+from urllib.parse import urlparse
 
 import bs4
 import requests
@@ -13,8 +17,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 if TYPE_CHECKING:
-    import datetime
-    from typing import Callable, Generator, List, Optional, Tuple, TypeVar, Any
+    from typing import Any, Callable, Generator, List, Optional, Tuple, TypeVar
+
     from selenium import webdriver
     from selenium.webdriver.remote.webelement import WebElement
 
@@ -241,14 +245,14 @@ def clean_date_string(date_str: str) -> str:
     return date_str
 
 
-def parse_date(date_str: str) -> Optional[datetime.date]:
-    """Parse a date string into a `datetime.date` object.
+def parse_date(date_str: str) -> Optional[date]:
+    """Parse a date string into a `date` object.
 
     Args:
         date_str (str): The date string to be parsed.
 
     Returns:
-        Optional[datetime.date]: The parsed date object if successful,
+        Optional[date]: The parsed date object if successful,
             otherwise None.
     """
     # Clean the date string
@@ -261,3 +265,58 @@ def parse_date(date_str: str) -> Optional[datetime.date]:
     except ValueError as e:
         print(f"Error parsing date: {e}")
         return None
+
+
+def str_to_datetime(date_str: str, fmt: str, locales: list[str] = ["en_US.utf8"], **force_fields) -> datetime:
+    """
+    Parse a date string using multiple locales and optionally override datetime fields.
+
+    Args:
+        date_str (str): The date string to parse.
+        fmt (str): The strptime format string.
+        locales (list[str]): List of locale names to try (e.g., ["en_US.UTF-8", "fr_FR.UTF-8"]).
+        **force_fields: Any datetime fields to override (year=2025, minute=0, etc.).
+    """
+    last_error = None
+    dt = None
+    
+    for loc in locales:
+        try:
+            locale.setlocale(locale.LC_TIME, loc)
+            dt = datetime.strptime(date_str, fmt)
+            break  # success, stop trying
+        except Exception as e:
+            last_error = e
+            continue
+    
+    if dt is None:
+        raise ValueError(f"Could not parse '{date_str}' with given format in any locale: {last_error}")
+    
+    # Apply forced fields (always override)
+    valid_fields = {
+        k: v for k, v in force_fields.items()
+        if k in ["year", "month", "day", "hour", "minute", "second", "microsecond"]
+    }
+    if valid_fields:
+        dt = dt.replace(**valid_fields)
+    
+    return dt
+
+def extract_most_common_domain(soup: bs4.BeautifulSoup) -> str:
+    """
+    Extract the most common domain from all links in a BeautifulSoup object.
+    """
+    links = soup.find_all(href=True)
+    domains = []
+
+    for link in links:
+        href = link["href"]
+        parsed = urlparse(href)
+        if parsed.scheme in ("http", "https") and parsed.netloc:
+            domains.append(parsed.netloc)
+    
+    if not domains:
+        raise ValueError("No valid links found in the provided BeautifulSoup object.")
+    
+    # Return the most common domain
+    return Counter(domains).most_common(1)[0][0]

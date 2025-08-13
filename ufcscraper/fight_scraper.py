@@ -483,7 +483,7 @@ class UpcomingFightScraper(BaseFightScraper):
     }
     sort_fields = ["event_id", "fight_id"]
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
-    filename = "upcoming_fight_data.csv"
+    filename = "upcoming/fight_data.csv"
     event_scraper = UpcomingEventScraper
 
     def scrape_fights(self) -> None:

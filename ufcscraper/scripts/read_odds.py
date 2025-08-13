@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import argparse
-from typing import TYPE_CHECKING
-from pathlib import Path
-
 import logging
 import sys
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import bs4
 
 if TYPE_CHECKING:
     from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-from ufcscraper.odds_scraper import Bet365OddsReader
+from ufcscraper.odds_reader import Bet365OddsReader, WilliamHillOddsReader
+from ufcscraper.utils import extract_most_common_domain
+
 
 def main(args: Optional[argparse.Namespace] = None) -> None:
     if args is None:
@@ -24,14 +27,28 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         format="%(levelname)s:%(message)s",
     )
 
-    reader = Bet365OddsReader(
+    # Load html file into soup and check most common url
+    soup = bs4.BeautifulSoup(open(args.file, "r", encoding="utf-8"), "lxml")
+    most_common_domain = extract_most_common_domain(soup)
+
+    if "bet365" in most_common_domain:
+        logger.info("Detected Bet365 odds data.")
+        Reader = Bet365OddsReader
+    elif "williamhill" in most_common_domain:
+        logger.info("Detected William Hill odds data.")
+        Reader = WilliamHillOddsReader
+    else:
+        logger.error("Unknown odds data source. Please check the HTML file.")
+        sys.exit(1)
+
+    reader = Reader(
         html_file=args.file,
         data_folder=args.data_folder,
     )
 
     reader.scrape_odds(locales=args.locales)
 
-    
+
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Read Bet365 odds data from a HTML file and save it to a CSV file."
