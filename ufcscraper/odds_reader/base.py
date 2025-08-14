@@ -257,8 +257,14 @@ class BaseOdds(BaseFileHandler, ABC):
 
         logger.info(f"Rows to be consolidated: {len(final_data)}")
 
+        previous_size = len(self.data)
+
         final_data = pd.concat([final_data, self.data], ignore_index=True)
 
         final_data.to_csv(self.data_file, index=False)
         self.remove_duplicates_from_file()
         logger.info(f"Consolidated {betting_house} odds data saved to {self.data_file}")
+        logger.info(
+            f"Rows added to database: {len(self.data) - previous_size} "
+            f"(total: {len(self.data)})"
+        )
