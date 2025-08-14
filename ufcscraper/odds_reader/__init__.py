@@ -1,5 +1,8 @@
 from .bet365_odds_reader import Bet365OddsReader
 from .williamhill_odds_reader import WilliamHillOddsReader
+from .betway_odds_reader import BetwayOddsReader
+from .bwin_odds_reader import BwinOddsReader
+
 from .base import BaseOdds
 
 class Odds(BaseOdds):

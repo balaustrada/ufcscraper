@@ -15,9 +15,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
+import dateparser
 
 from ufcscraper.odds_reader.base import OddsReader
-from ufcscraper.utils import str_to_datetime
 
 if TYPE_CHECKING:
     from typing import Dict, List
@@ -32,7 +32,7 @@ class Bet365OddsReader(OddsReader):
 
     filename = "raw_odds/bet365_odds_raw.csv"
 
-    def scrape_odds(self, locales: list[str] = ["en_US.utf8 "]) -> None:
+    def scrape_odds(self, languages: list[str] = ["es", "en"]) -> None:
         """
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
@@ -49,17 +49,17 @@ class Bet365OddsReader(OddsReader):
                 # Handle date header
                 datestr = elem.text
 
-                date = str_to_datetime(
+                date = dateparser.parse(
                     datestr,
-                    fmt="%a %d %b",
-                    locales=locales,
-                    year=self.html_datetime.year,
+                    languages=languages,
+                    settings = {
+                        "PREFER_DATES_FROM": "future",
+                        "RELATIVE_BASE": self.html_datetime,
+                    }
                 )
 
-                # If fight date month is lower than the HTML datetime month,
-                # it means the fight is in the next year.
-                if self.html_datetime.month > date.month:
-                    date = date.replace(year=self.html_datetime.year + 1)
+                if date is None:
+                    raise ValueError(f"Could not parse date from: {datestr}")
 
                 fights[date] = []
 
@@ -94,13 +94,13 @@ class Bet365OddsReader(OddsReader):
             for fight, odds in zip(fights[date], odds_dict[date]):
                 fighter, opponent = fight
                 fighter_odds, opponent_odds = odds
-                row = [
-                    date.strftime("%Y-%m-%d"),
+                row = (
+                    date,
                     fighter,
                     opponent,
                     fighter_odds,
                     opponent_odds,
-                ]
+                )
                 rows_to_add.append(row)
 
 

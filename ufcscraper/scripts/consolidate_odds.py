@@ -109,7 +109,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
             data_folder=args.data_folder,
         )
 
-    for betting_house in ["Bet365"]:
+    for betting_house in ["Bet365", "Betway", "Bwin", "WilliamHill"]:
         odds.consolidate_odds(
             betting_house=betting_house,
             max_date_diff_days=args.max_date_diff_days,

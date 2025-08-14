@@ -13,7 +13,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-from ufcscraper.odds_reader import Bet365OddsReader, WilliamHillOddsReader
+from ufcscraper.odds_reader import (
+    Bet365OddsReader,
+    WilliamHillOddsReader,
+    BetwayOddsReader,
+    BwinOddsReader,
+)
 from ufcscraper.utils import extract_most_common_domain
 
 
@@ -37,6 +42,12 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     elif "williamhill" in most_common_domain:
         logger.info("Detected William Hill odds data.")
         Reader = WilliamHillOddsReader
+    elif "betway" in most_common_domain:
+        logger.info("Detected Betway odds data.")
+        Reader = BetwayOddsReader
+    elif "bwin" in most_common_domain:
+        logger.info("Detected Bwin odds data.")
+        Reader = BwinOddsReader
     else:
         logger.error("Unknown odds data source. Please check the HTML file.")
         sys.exit(1)
@@ -46,7 +57,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         data_folder=args.data_folder,
     )
 
-    reader.scrape_odds(locales=args.locales)
+    reader.scrape_odds(languages=args.languages)
 
 
 def get_args() -> argparse.Namespace:
@@ -73,10 +84,10 @@ def get_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--locales",
+        "--languages",
         type=list,
-        default=["en_US.utf8", "es_ES.utf8"],
-        help="Locales to use for parsing numbers and dates.",
+        default=["es",],
+        help="Languages to use for parsing numbers and dates.",
     )
 
     return parser.parse_args()

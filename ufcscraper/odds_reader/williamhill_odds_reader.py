@@ -8,20 +8,12 @@ Classes:
 
 from __future__ import annotations
 
-import csv
-from locale import setlocale, LC_TIME
 import logging
-from datetime import datetime, time
-from typing import TYPE_CHECKING
 
 from bs4 import BeautifulSoup
+import dateparser
 
 from ufcscraper.odds_reader.base import OddsReader
-from ufcscraper.utils import str_to_datetime
-
-if TYPE_CHECKING:
-    from typing import Dict, List
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +25,7 @@ class WilliamHillOddsReader(OddsReader):
 
     filename = "raw_odds/williamhill_odds_raw.csv"
 
-    def scrape_odds(self, locales: list[str] = ["en_US.utf8"]) -> None:
+    def scrape_odds(self, languages: list[str] = ["es", "en"]) -> None:
         """
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
@@ -45,12 +37,18 @@ class WilliamHillOddsReader(OddsReader):
         for row in table:
             time_tag = row.find("time", class_="eventStartTime localisable")
 
-            date = str_to_datetime(
+            date = dateparser.parse(
                 time_tag.text.strip(),
-                fmt="%d %b. %H:%M",
-                locales=locales,
-                year=self.html_datetime.year,
+                languages=languages,
+                settings = {
+                    "PREFER_DATES_FROM": "future",
+                    "RELATIVE_BASE": self.html_datetime,
+                }
             )
+            print(time_tag.text.strip(), date)
+
+            if date is None:
+                raise ValueError(f"Could not parse date from: {time_tag.text.strip(),}")
 
             # it means the fight is in the next year.
             if self.html_datetime.month > date.month:
@@ -65,13 +63,13 @@ class WilliamHillOddsReader(OddsReader):
 
 
             rows_to_add.append(
-                [   
-                    date.strftime("%Y-%m-%d"),
-                    names.text.split('v')[0].strip(),
-                    names.text.split('v')[1].strip(),
+                (   
+                    date,
+                    names.text.split(' v ')[0].strip(),
+                    names.text.split(' v ')[1].strip(),
                     float(odds[0].text.strip()),
                     float(odds[1].text.strip()),
-                ]
+                )
             )
 
         self.write_odds(rows_to_add)

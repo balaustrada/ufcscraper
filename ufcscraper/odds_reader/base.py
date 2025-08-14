@@ -63,22 +63,32 @@ class OddsReader(BaseHTMLReader):
         """
         raise NotImplementedError("This method should be implemented by subclasses.")
 
-    def write_odds(self, rows: List[Tuple[str, str, str, float, float]]) -> None:
+    def write_odds(self, rows: List[Tuple[datetime, str, str, float, float]]) -> None:
         """
         Writes the odds data to a CSV file.
 
         Args:
-            rows (List[Tuple[str, str, str, str, float, float]]): A list of tuples containing date, fighter name, opponent name, fighter odds, and opponent odds.
+            rows (List[Tuple[datetime, str, str, str, float, float]]): A list of tuples containing date, fighter name, opponent name, fighter odds, and opponent odds.
         """
         logger.info(f"Rows to be written: {len(rows)}")
         database_length = len(self.data)
 
+        # Iterate over tuple and add prepending element self.html_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+        final_rows = []
+        for row in rows:
+            final_rows.append(
+                (
+                    self.html_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                    row[0].strftime("%Y-%m-%d"),
+                )
+                + row[1:]
+            )
+
         with open(self.data_file, "a") as file:
             writer = csv.writer(file)
-            for row in rows:
-                writer.writerow(
-                    [self.html_datetime.strftime("%Y-%m-%d %H:%M:%S")] + list(row)
-                )
+            for row in final_rows:
+                writer.writerow(row)
 
         self.remove_duplicates_from_file()
         self.load_data()
@@ -113,7 +123,7 @@ class BaseOdds(BaseFileHandler, ABC):
             max_date_diff_days: Maximum allowed difference in days between fight date and event date
             min_match_score: Minimum fuzzy match score to consider a name match valid
         """
-        if betting_house.lower() not in ["bet365"]:
+        if betting_house.lower() not in ["bet365", "betway", "bwin", "williamhill"]:
             raise ValueError(f"Unsupported betting house: {betting_house}")
 
         scraper = UFCScraper(self.data_folder)
@@ -191,6 +201,8 @@ class BaseOdds(BaseFileHandler, ABC):
                 unmatched_dates.add(odd_date)
 
         for unmatched_date in sorted(unmatched_dates):
+            if (unmatched_date < datetime.now() and self.upcoming) or (unmatched_date > datetime.now() and not self.upcoming):
+                continue
             logger.warning(f"Unmatched fight at date {unmatched_date}")
 
         odds["fight_date"] = odds["fight_date"].map(date_mapping)
@@ -231,6 +243,8 @@ class BaseOdds(BaseFileHandler, ABC):
         final_data["scrape_datetime"] = pd.to_datetime(final_data["scrape_datetime"])
 
         final_data["betting_house"] = betting_house
+
+        final_data = pd.concat([final_data, self.data], ignore_index=True)
 
         final_data.to_csv(self.data_file, index=False)
         self.remove_duplicates_from_file()

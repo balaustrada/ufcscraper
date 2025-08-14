@@ -267,41 +267,6 @@ def parse_date(date_str: str) -> Optional[date]:
         return None
 
 
-def str_to_datetime(date_str: str, fmt: str, locales: list[str] = ["en_US.utf8"], **force_fields) -> datetime:
-    """
-    Parse a date string using multiple locales and optionally override datetime fields.
-
-    Args:
-        date_str (str): The date string to parse.
-        fmt (str): The strptime format string.
-        locales (list[str]): List of locale names to try (e.g., ["en_US.UTF-8", "fr_FR.UTF-8"]).
-        **force_fields: Any datetime fields to override (year=2025, minute=0, etc.).
-    """
-    last_error = None
-    dt = None
-    
-    for loc in locales:
-        try:
-            locale.setlocale(locale.LC_TIME, loc)
-            dt = datetime.strptime(date_str, fmt)
-            break  # success, stop trying
-        except Exception as e:
-            last_error = e
-            continue
-    
-    if dt is None:
-        raise ValueError(f"Could not parse '{date_str}' with given format in any locale: {last_error}")
-    
-    # Apply forced fields (always override)
-    valid_fields = {
-        k: v for k, v in force_fields.items()
-        if k in ["year", "month", "day", "hour", "minute", "second", "microsecond"]
-    }
-    if valid_fields:
-        dt = dt.replace(**valid_fields)
-    
-    return dt
-
 def extract_most_common_domain(soup: bs4.BeautifulSoup) -> str:
     """
     Extract the most common domain from all links in a BeautifulSoup object.
