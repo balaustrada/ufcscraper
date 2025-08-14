@@ -264,6 +264,7 @@ class BaseOdds(BaseFileHandler, ABC):
         final_data.to_csv(self.data_file, index=False)
         self.remove_duplicates_from_file()
         logger.info(f"Consolidated {betting_house} odds data saved to {self.data_file}")
+        self.load_data()
         logger.info(
             f"Rows added to database: {len(self.data) - previous_size} "
             f"(total: {len(self.data)})"
