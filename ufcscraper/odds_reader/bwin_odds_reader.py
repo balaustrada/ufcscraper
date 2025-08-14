@@ -62,14 +62,22 @@ class BwinOddsReader(OddsReader):
                 
                 odds = [o.get_text(strip=True) for o in fight.find_all("ms-font-resizer")]
 
-                date = dateparser.parse(
-                    date_string = fight.find("ms-prematch-timer").text,
-                    languages = ["es", "en"],
-                    settings={
-                    'PREFER_DATES_FROM': 'future',
-                    'RELATIVE_BASE': datetime.now(),
-                    }
-                )
+                datestr = fight.find("ms-prematch-timer").text
+
+                for language in languages:
+                    date = dateparser.parse(
+                        datestr,
+                        languages=[language,],
+                        locales=[language,],
+                        settings = {
+                            "PREFER_DATES_FROM": "future",
+                            "RELATIVE_BASE": self.html_datetime,
+                        }
+                    )
+                    if date is not None:
+                        break
+                else:
+                    raise ValueError(f"Could not parse date from: {datestr}")
 
                 rows_to_add.append((
                     date,

@@ -49,16 +49,19 @@ class Bet365OddsReader(OddsReader):
                 # Handle date header
                 datestr = elem.text
 
-                date = dateparser.parse(
-                    datestr,
-                    languages=languages,
-                    settings = {
-                        "PREFER_DATES_FROM": "future",
-                        "RELATIVE_BASE": self.html_datetime,
-                    }
-                )
-
-                if date is None:
+                for language in languages:
+                    date = dateparser.parse(
+                        datestr,
+                        languages=[language,],
+                        locales=[language,],
+                        settings = {
+                            "PREFER_DATES_FROM": "future",
+                            "RELATIVE_BASE": self.html_datetime,
+                        }
+                    )
+                    if date is not None:
+                        break
+                else:
                     raise ValueError(f"Could not parse date from: {datestr}")
 
                 fights[date] = []

@@ -36,19 +36,22 @@ class WilliamHillOddsReader(OddsReader):
 
         for row in table:
             time_tag = row.find("time", class_="eventStartTime localisable")
+            datestr = time_tag.text.strip()
 
-            date = dateparser.parse(
-                time_tag.text.strip(),
-                languages=languages,
-                settings = {
-                    "PREFER_DATES_FROM": "future",
-                    "RELATIVE_BASE": self.html_datetime,
-                }
-            )
-            print(time_tag.text.strip(), date)
-
-            if date is None:
-                raise ValueError(f"Could not parse date from: {time_tag.text.strip(),}")
+            for language in languages:
+                date = dateparser.parse(
+                    datestr,
+                    languages=[language,],
+                    locales=[language,],
+                    settings = {
+                        "PREFER_DATES_FROM": "future",
+                        "RELATIVE_BASE": self.html_datetime,
+                    }
+                )
+                if date is not None:
+                    break
+            else:
+                raise ValueError(f"Could not parse date from: {datestr}")
 
             # it means the fight is in the next year.
             if self.html_datetime.month > date.month:

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from abc import ABC
 import csv
-from locale import setlocale, LC_TIME
-import logging
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple
 
 from fuzzywuzzy import fuzz
+from loguru import logger
 import pandas as pd
 
 from ufcscraper.base import BaseFileHandler, BaseHTMLReader
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
     from typing import Dict, List
 
 
-logger = logging.getLogger(__name__)
 
 
 class OddsReader(BaseHTMLReader):
@@ -220,6 +218,8 @@ class BaseOdds(BaseFileHandler, ABC):
         # Create index to select best match
         odds = odds.reset_index().rename(columns={"index": "odds_row_id"})
 
+        logger.info(f"Rows to be matched: {len(odds)}")
+
         # Merge odds with fight data
         merged = odds.merge(
             data,
@@ -237,7 +237,9 @@ class BaseOdds(BaseFileHandler, ABC):
         below_threshold = best_matches["match_score"] < min_match_score
         for _, row in best_matches[below_threshold].iterrows():
             logger.warning(
-                f"Low match score ({row['match_score']}) for '{row['fighter_name']}' vs '{row['fighter_full_name']}'"
+                f"Low match score ({row['match_score']}):"
+                f"\tFighter in raw odds: '{row['fighter_name']}'"
+                f"\tFighter in UFCStats: '{row['fighter_full_name']}'"
             )
 
         final_data = best_matches[
@@ -252,6 +254,8 @@ class BaseOdds(BaseFileHandler, ABC):
         final_data["scrape_datetime"] = pd.to_datetime(final_data["scrape_datetime"])
 
         final_data["betting_house"] = betting_house
+
+        logger.info(f"Rows to be consolidated: {len(final_data)}")
 
         final_data = pd.concat([final_data, self.data], ignore_index=True)
 

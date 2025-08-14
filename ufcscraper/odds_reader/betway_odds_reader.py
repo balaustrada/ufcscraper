@@ -44,16 +44,20 @@ class BetwayOddsReader(OddsReader):
         for section in soup.find_all("section", {"data-testid": "event-table-section"}):        
             date = section.find("span", {"data-testid": "table-header-title"})
             
-            print(date.text)
-
-            date = dateparser.parse(
-                date_string = date.text,
-                languages = ["es", "en"],
-                settings={
-                'PREFER_DATES_FROM': 'future',
-                'RELATIVE_BASE': datetime.now(),
-                }
-            )
+            for language in languages:
+                date = dateparser.parse(
+                    date.text,
+                    languages=[language,],
+                    locales=[language,],
+                    settings = {
+                        "PREFER_DATES_FROM": "future",
+                        "RELATIVE_BASE": self.html_datetime,
+                    }
+                )
+                if date is not None:
+                    break
+            else:
+                raise ValueError(f"Could not parse date from: {date.text}")
 
             for fight_section in section.find_all("div", {"data-testid": "table-section"}):
                 fight_records = fight_section.find_all("span")

@@ -95,7 +95,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "--languages",
         type=list,
-        default=["es",],
+        default=["es", "en"],
         help="Languages to use for parsing numbers and dates.",
     )
 

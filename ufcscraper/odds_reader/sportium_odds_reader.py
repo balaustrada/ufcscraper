@@ -45,15 +45,23 @@ class SportiumOddsReader(OddsReader):
         for table in soup.find_all("div", class_="ta-FlexPane ta-EventListItems"):
             for fight in table.find_all("div", class_="ta-FlexPane ta-EventListItem"):
                 date_div = fight.find("div", class_="ta-Button")
+                datestr = date_div.text.strip()
+
+                for language in languages:
+                    date = dateparser.parse(
+                        datestr,
+                        languages=[language,],
+                        locales=[language,],
+                        settings = {
+                            "PREFER_DATES_FROM": "future",
+                            "RELATIVE_BASE": self.html_datetime,
+                        }
+                    )
+                    if date is not None:
+                        break
+                else:
+                    raise ValueError(f"Could not parse date from: {datestr}")
                 
-                date = dateparser.parse(
-                    date_div.text.strip(),
-                    languages = ["es",],
-                    settings={
-                    'PREFER_DATES_FROM': 'future',
-                    'RELATIVE_BASE': datetime.now(),
-                    }
-                )
                 fighters = []
                 odds = []
                 for fighter in fight.find_all("div", class_="ta-participantName"):
