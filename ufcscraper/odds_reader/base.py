@@ -123,7 +123,14 @@ class BaseOdds(BaseFileHandler, ABC):
             max_date_diff_days: Maximum allowed difference in days between fight date and event date
             min_match_score: Minimum fuzzy match score to consider a name match valid
         """
-        if betting_house.lower() not in ["bet365", "betway", "bwin", "williamhill"]:
+        if betting_house.lower() not in [
+            "bet365",
+            "betway",
+            "bwin",
+            "casino888",
+            "sportium",
+            "williamhill",
+        ]:
             raise ValueError(f"Unsupported betting house: {betting_house}")
 
         scraper = UFCScraper(self.data_folder)
@@ -201,11 +208,13 @@ class BaseOdds(BaseFileHandler, ABC):
                 unmatched_dates.add(odd_date)
 
         for unmatched_date in sorted(unmatched_dates):
-            if (unmatched_date < datetime.now() and self.upcoming) or (unmatched_date > datetime.now() and not self.upcoming):
+            if (unmatched_date < datetime.now() and self.upcoming) or (
+                unmatched_date > datetime.now() and not self.upcoming
+            ):
                 continue
             logger.warning(f"Unmatched fight at date {unmatched_date}")
 
-        odds["fight_date"] = odds["fight_date"].map(date_mapping)
+        odds["fight_date"] = odds["fight_date"].map(date_mapping).astype("datetime64[ns]")
         odds = odds.rename(columns={"fight_date": "event_date"})
 
         # Create index to select best match

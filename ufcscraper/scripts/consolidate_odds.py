@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from loguru import logger
+
 from ufcscraper.odds_reader import BaseOdds, Odds, UpcomingOdds
 
 if TYPE_CHECKING:
@@ -109,7 +111,15 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
             data_folder=args.data_folder,
         )
 
-    for betting_house in ["Bet365", "Betway", "Bwin", "WilliamHill"]:
+    for betting_house in [
+        "Bet365",
+        "Betway",
+        "Bwin",
+        "Casino888",
+        "Sportium",
+        "WilliamHill",
+    ]:
+        logger.info(f"Consolidating odds for: {betting_house}")
         odds.consolidate_odds(
             betting_house=betting_house,
             max_date_diff_days=args.max_date_diff_days,

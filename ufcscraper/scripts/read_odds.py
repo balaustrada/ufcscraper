@@ -15,9 +15,12 @@ logger = logging.getLogger(__name__)
 
 from ufcscraper.odds_reader import (
     Bet365OddsReader,
-    WilliamHillOddsReader,
     BetwayOddsReader,
     BwinOddsReader,
+    Casino888OddsReader,
+    WilliamHillOddsReader,
+    SportiumOddsReader,
+
 )
 from ufcscraper.utils import extract_most_common_domain
 
@@ -48,6 +51,12 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     elif "bwin" in most_common_domain:
         logger.info("Detected Bwin odds data.")
         Reader = BwinOddsReader
+    elif "888sport" in most_common_domain:
+        logger.info("Detected Casino888 odds data.")
+        Reader = Casino888OddsReader
+    elif "sportium" in most_common_domain:
+        logger.info("Detected Sportium odds data.")
+        Reader = SportiumOddsReader
     else:
         logger.error("Unknown odds data source. Please check the HTML file.")
         sys.exit(1)

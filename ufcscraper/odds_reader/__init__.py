@@ -1,7 +1,9 @@
 from .bet365_odds_reader import Bet365OddsReader
-from .williamhill_odds_reader import WilliamHillOddsReader
 from .betway_odds_reader import BetwayOddsReader
 from .bwin_odds_reader import BwinOddsReader
+from .casino_888_odds_reader import Casino888OddsReader
+from .williamhill_odds_reader import WilliamHillOddsReader
+from .sportium_odds_reader import SportiumOddsReader
 
 from .base import BaseOdds
 
