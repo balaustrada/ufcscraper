@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple
 
-from fuzzywuzzy import fuzz
+from fuzzywuzzy import fuzz, process
 from loguru import logger
 import pandas as pd
 
@@ -17,7 +17,14 @@ from ufcscraper.ufc_scraper import UFCScraper
 if TYPE_CHECKING:
     from typing import Dict, List
 
-
+available_betting_houses = [
+    "Bet365",
+    "Betway",
+    "Bwin",
+    "Casino888",
+    "Sportium",
+    "WilliamHill",
+]
 
 
 class OddsReader(BaseHTMLReader):
@@ -110,6 +117,77 @@ class BaseOdds(BaseFileHandler, ABC):
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     upcoming: bool
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initializes the BaseOdds class.
+
+        Args:
+            *args: Additional positional arguments passed to the base class.
+            **kwargs: Additional keyword arguments passed to the base class.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.fighter_names = FighterNames(self.data_folder)
+
+    def add_fighter_names(self, betting_house: str, min_score: int = 90) -> None:
+        """Add fighter names from the betting house to the fighter_names table.
+
+        Args:
+            betting_house (str): The name of the betting house (e.g., "Bet365").
+            min_score (int): Minimum fuzzy match score to consider a name match valid.
+        """
+        if betting_house not in available_betting_houses:
+            raise ValueError(f"Unsupported betting house: {betting_house}")
+
+        self.fighter_names.check_missing_records()
+
+        stored_names = self.fighter_names.data[
+            self.fighter_names.data["database"] == betting_house
+        ]
+        ufc_names = self.fighter_names.data[
+            self.fighter_names.data["database"] == "UFCStats"
+        ]
+
+        odds = pd.read_csv(
+            self.data_folder / f"raw_odds/{betting_house.lower()}_odds_raw.csv"
+        )
+        names = set(odds["fighter_name"].tolist() + odds["opponent_name"].tolist())
+
+        names = sorted(
+            names - set(stored_names["name"])
+        )  # Now that is a list with only new names in it
+
+        fighter_ids = []
+        valid_names = []
+        for name in names:
+            if "," in name:
+                lookup_name = " ".join(map(str.strip, name.rsplit(",", 1)[::-1]))
+            else:
+                lookup_name = name
+
+            match_name, score, position = process.extractOne(
+                lookup_name,
+                ufc_names["name"],
+                scorer=fuzz.token_set_ratio,
+            )
+            fighter_id = ufc_names.loc[position]["fighter_id"]
+
+            if score >= min_score:
+                fighter_ids.append(fighter_id)
+                valid_names.append(name)
+            else:
+                name_string = name
+                if lookup_name != name:
+                    name_string = f"{name} (lookup: {lookup_name})"
+                logger.warning(
+                    f"Unable to find match to fighter in odds: {name_string}"
+                    f"\n\t Best match: {match_name} (score: {score})"
+                )
+
+        with open(self.fighter_names.data_file, "a") as f_names:
+            writer = csv.writer(f_names)
+            for fighter_id, name in zip(fighter_ids, valid_names):
+                writer.writerow([fighter_id, betting_house, name, ""])
+
     def consolidate_odds(
         self, betting_house: str, max_date_diff_days: int = 3, min_match_score: int = 90
     ) -> None:
@@ -121,21 +199,15 @@ class BaseOdds(BaseFileHandler, ABC):
             max_date_diff_days: Maximum allowed difference in days between fight date and event date
             min_match_score: Minimum fuzzy match score to consider a name match valid
         """
-        if betting_house.lower() not in [
-            "bet365",
-            "betway",
-            "bwin",
-            "casino888",
-            "sportium",
-            "williamhill",
-        ]:
+        self.add_fighter_names(betting_house, min_match_score)
+
+        if betting_house not in available_betting_houses:
             raise ValueError(f"Unsupported betting house: {betting_house}")
 
         scraper = UFCScraper(self.data_folder)
         odds = pd.read_csv(
             self.data_folder / f"raw_odds/{betting_house.lower()}_odds_raw.csv"
         )
-
         fighter_data = scraper.fighter_scraper.data
 
         if self.upcoming:
@@ -144,56 +216,35 @@ class BaseOdds(BaseFileHandler, ABC):
 
         else:
             fight_data = scraper.fight_scraper.data
-            fighter_data = scraper.fighter_scraper.data
             event_data = scraper.event_scraper.data
 
-        fighter_data["fighter_full_name"] = (
-            fighter_data["fighter_f_name"] + " " + fighter_data["fighter_l_name"]
-        )
+        fight_data = fight_data.merge(
+            event_data[["event_id", "event_date"]],
+            on="event_id",
+        )[["event_date", "fight_id", "fighter_1", "fighter_2"]]
 
-        fight_data = pd.concat(
-            [
-                fight_data[["fight_id", "event_id", "fighter_1"]].rename(
-                    columns={"fighter_1": "fighter_id"}
-                ),
-                fight_data[["fight_id", "event_id", "fighter_2"]].rename(
-                    columns={"fighter_2": "fighter_id"}
-                ),
-            ]
-        )
-
-        data = (
-            fight_data.merge(
-                fighter_data[["fighter_id", "fighter_full_name"]],
-                on="fighter_id",
-            ).merge(event_data[["event_id", "event_date"]], on="event_id")
-        )[
-            [
-                "fight_id",
-                "fighter_id",
-                "fighter_full_name",
-                "event_date",
-            ]
-        ]
-
-        odds = pd.concat(
-            [
-                odds[["html_datetime", "fight_date", "fighter_name", "fighter_odds"]],
-                odds[
-                    ["html_datetime", "fight_date", "opponent_name", "opponent_odds"]
-                ].rename(
-                    columns={
-                        "opponent_name": "fighter_name",
-                        "opponent_odds": "fighter_odds",
-                    }
-                ),
-            ]
+        fighter_names = self.fighter_names.data
+        fighter_names = fighter_names[fighter_names["database"] == betting_house][["fighter_id", "name"]]
+        
+        odds = odds.merge(
+            fighter_names.rename(columns={
+                "name": "fighter_name",
+            }),
+            on="fighter_name",
+        ).merge(
+            fighter_names.rename(columns={
+                "name": "opponent_name", 
+                "fighter_id": "opponent_id",
+            }),
+            on="opponent_name",
+        )[["html_datetime", "fight_date", "fighter_id", "opponent_id", "fighter_odds", "opponent_odds"]].rename(
+            columns={"html_datetime": "scrape_datetime"}
         )
 
         odds["fight_date"] = pd.to_datetime(odds["fight_date"])
 
         # Map fight_dates to valid event_dates
-        unique_event_date = data["event_date"].unique()
+        unique_event_date = fight_data["event_date"].unique()
         date_mapping = {}
         unmatched_dates = set()
         for odd_date in pd.to_datetime(odds["fight_date"].unique()):
@@ -210,49 +261,49 @@ class BaseOdds(BaseFileHandler, ABC):
                 unmatched_date > datetime.now() and not self.upcoming
             ):
                 continue
-            logger.warning(f"Unmatched fight at date {unmatched_date}")
+            logger.warning(f"Unmatched odds date: {unmatched_date}")
 
-        odds["fight_date"] = odds["fight_date"].map(date_mapping).astype("datetime64[ns]")
+        odds["fight_date"] = (
+            odds["fight_date"].map(date_mapping).astype("datetime64[ns]")
+        )
         odds = odds.rename(columns={"fight_date": "event_date"})
+        odds = odds[odds["event_date"].notnull()]
 
-        # Create index to select best match
-        odds = odds.reset_index().rename(columns={"index": "odds_row_id"})
+        odds = pd.concat([
+            odds.rename(columns={
+                "fighter_id": "fighter_1", 
+                "opponent_id": "fighter_2", 
+                "fighter_odds": "fighter_1_odds",
+                "opponent_odds": "fighter_2_odds",
+            }),
+            odds.rename(columns={
+                "fighter_id": "fighter_2", 
+                "opponent_id": "fighter_1", 
+                "fighter_odds": "fighter_2_odds",
+                "opponent_odds": "fighter_1_odds",
+            }),
 
-        logger.info(f"Rows to be matched: {len(odds)}")
-
-        # Merge odds with fight data
-        merged = odds.merge(
-            data,
-            on="event_date",
+        ])
+            
+        fight_data_with_odds = fight_data.merge(
+            odds,
+            on=["fighter_1", "fighter_2", "event_date"]
         )
-        # Compute fuzzy match score
-        merged["match_score"] = merged.apply(
-            lambda row: fuzz.token_set_ratio(
-                row["fighter_name"], row["fighter_full_name"]
+
+        final_data= pd.concat([
+            fight_data_with_odds[["scrape_datetime", "fight_id", "fighter_1", "fighter_1_odds"]].rename(
+                columns={
+                    "fighter_1": "fighter_id",
+                    "fighter_1_odds": "odds",
+                }
             ),
-            axis=1,
-        )
-        best_matches = merged.loc[merged.groupby("odds_row_id")["match_score"].idxmax()]
-
-        below_threshold = best_matches["match_score"] < min_match_score
-        for _, row in best_matches[below_threshold].iterrows():
-            logger.warning(
-                f"Low match score ({row['match_score']}):"
-                f"\tFighter in raw odds: '{row['fighter_name']}'"
-                f"\tFighter in UFCStats: '{row['fighter_full_name']}'"
-            )
-
-        final_data = best_matches[
-            ["html_datetime", "fight_id", "fighter_id", "fighter_odds"]
-        ].rename(
-            columns={
-                "html_datetime": "scrape_datetime",
-                "fighter_odds": "odds",
-            }
-        )
-
-        final_data["scrape_datetime"] = pd.to_datetime(final_data["scrape_datetime"])
-
+            fight_data_with_odds[["scrape_datetime", "fight_id", "fighter_2", "fighter_2_odds"]].rename(
+                columns={
+                    "fighter_2": "fighter_id",
+                    "fighter_2_odds": "odds",
+                }
+            ),
+        ])
         final_data["betting_house"] = betting_house
 
         logger.info(f"Rows to be consolidated: {len(final_data)}")

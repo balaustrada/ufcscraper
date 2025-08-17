@@ -78,6 +78,13 @@ def get_args() -> argparse.Namespace:
         help="If set, will consolidate odds for upcoming fights.",
     )
 
+    parser.add_argument(
+        "--betting-houses",
+        nargs="*",
+        default=["Bet365", "Betway", "Bwin", "Casino888", "Sportium", "WilliamHill"],
+        help="List of betting houses to consolidate odds for. Defaults to all available houses.",
+    )
+
     return parser.parse_args()
 
 
@@ -111,14 +118,7 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
             data_folder=args.data_folder,
         )
 
-    for betting_house in [
-        "Bet365",
-        "Betway",
-        "Bwin",
-        "Casino888",
-        "Sportium",
-        "WilliamHill",
-    ]:
+    for betting_house in args.betting_houses:
         logger.info(f"Consolidating odds for: {betting_house}")
         odds.consolidate_odds(
             betting_house=betting_house,

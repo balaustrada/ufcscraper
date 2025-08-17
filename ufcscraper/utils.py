@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import locale
-import logging
+
 import multiprocessing
 import re
 import time
 from collections import Counter
-from datetime import date, datetime
+from datetime import date
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
+import pandas as pd
+from loguru import logger
 
 import bs4
 import requests
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
 
     T = TypeVar("T")
 
-logger = logging.getLogger(__name__)
 
 
 def get_session() -> requests.Session:
@@ -279,9 +279,34 @@ def extract_most_common_domain(soup: bs4.BeautifulSoup) -> str:
         parsed = urlparse(href)
         if parsed.scheme in ("http", "https") and parsed.netloc:
             domains.append(parsed.netloc)
-    
+
     if not domains:
         raise ValueError("No valid links found in the provided BeautifulSoup object.")
-    
+
     # Return the most common domain
     return Counter(domains).most_common(1)[0][0]
+
+
+def sort_fighter_opponent_columns(
+    df: pd.DataFrame, fighter_column: str, opponent_column: str
+) -> pd.DataFrame:
+    """
+    Sort the fighter and opponent columns in a DataFrame to keep consistency when
+    comparing two tables, where one might not be properly sorted.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the fighter and opponent columns.
+        fighter_column (str): The name of the column containing fighter names.
+        opponent_column (str): The name of the column containing opponent names.
+
+    Returns:
+        pd.DataFrame: The DataFrame with sorted fighter and opponent columns.
+    """
+    df = df.copy()
+    df[[fighter_column, opponent_column]] = pd.DataFrame(
+        df.apply(
+            lambda row: sorted([row[fighter_column], row[opponent_column]]), axis=1
+        ).tolist(),
+        index=df.index,
+    )
+    return df

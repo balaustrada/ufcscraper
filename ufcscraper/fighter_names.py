@@ -136,6 +136,7 @@ class FighterNames(BaseFileHandler):
         ufc_stats_data = UFCScraper(self.data_folder)
 
         fights = ufc_stats_data.fight_scraper.data
+        fights_upcoming = ufc_stats_data.upcoming_fight_scraper.data
 
         fighters_object = ufc_stats_data.fighter_scraper
         fighters_object.add_name_column()
@@ -147,6 +148,12 @@ class FighterNames(BaseFileHandler):
                     columns={"fighter_1": "opponent_id", "fighter_2": "fighter_id"}
                 ),
                 fights.rename(
+                    columns={"fighter_2": "opponent_id", "fighter_1": "fighter_id"}
+                ),
+                fights_upcoming.rename(
+                    columns={"fighter_1": "opponent_id", "fighter_2": "fighter_id"}
+                ),
+                fights_upcoming.rename(
                     columns={"fighter_2": "opponent_id", "fighter_1": "fighter_id"}
                 ),
             ]
