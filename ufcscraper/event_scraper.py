@@ -173,6 +173,7 @@ class UpcomingEventScraper(EventScraper):
 
         # Generate empty file with correct dtypes
         self.check_data_file()
+        self.load_data()
 
         # Scrape events from UFCStats
         super().scrape_events()

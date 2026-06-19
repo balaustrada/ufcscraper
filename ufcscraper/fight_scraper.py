@@ -583,6 +583,30 @@ class RoundsHandler(BaseFileHandler):
     data = pd.DataFrame({col: pd.Series(dtype=dt) for col, dt in dtypes.items()})
     filename = "round_data.csv"
 
+    def remove_duplicates_from_file(self) -> None:
+        """Remove duplicate round rows using logical round identity.
+
+        UFCStats rows can be re-scraped with a one-second difference in
+        `ctrl_time`, which means full-row deduplication keeps both copies.
+        We collapse rows by `(fight_id, fighter_id, round)` and keep the row
+        with the largest control time.
+        """
+        data = pd.read_csv(self.data_file, dtype=self.dtypes)
+
+        ctrl_time = data["ctrl_time"].fillna("")
+        ctrl_split = ctrl_time.str.extract(r"^(?P<minutes>\d+):(?P<seconds>\d{2})$")
+        minutes = pd.to_numeric(ctrl_split["minutes"], errors="coerce").fillna(-1)
+        seconds = pd.to_numeric(ctrl_split["seconds"], errors="coerce").fillna(0)
+        data["_ctrl_time_seconds"] = minutes * 60 + seconds
+
+        data = data.sort_values(by=self.sort_fields + ["_ctrl_time_seconds"])
+        data = data.drop_duplicates(
+            subset=["fight_id", "fighter_id", "round"],
+            keep="last",
+        )
+        data = data.drop(columns="_ctrl_time_seconds").reset_index(drop=True)
+        data.to_csv(self.data_file, index=False)
+
     @staticmethod
     def get_stats(
         fight_stats: bs4.element.ResultSet, fighter: int, round_: int, finish_round: int

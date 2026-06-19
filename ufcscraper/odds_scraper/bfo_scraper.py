@@ -393,7 +393,22 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         closing_range_min = []
         closing_range_max = []
 
-        fighter_name: str = rows_f[0].select_one("a").get_text(strip=True)
+        fighter_name_element = driver.find_elements(By.ID, "team-name")
+        fighter_name = fighter_name_element[0].text if fighter_name_element else ""
+
+        if not rows_f:
+            return (
+                fighter_name,
+                dates,
+                opponents_name,
+                opponents_id,
+                [],
+                [],
+                [],
+            )
+
+        if fighter_name == "":
+            fighter_name = rows_f[0].select_one("a").get_text(strip=True)
 
         for row_f, row_s in zip(rows_f, rows_s):
             date_string = row_s.find(class_="item-non-mobile").text

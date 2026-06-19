@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 import multiprocessing
+import hashlib
 import re
 import time
 from collections import Counter
@@ -47,6 +48,38 @@ def get_session() -> requests.Session:
     session.mount("https://", adapter)
 
     return session
+
+
+def _solve_js_browser_check(response: requests.Response, session: requests.Session) -> bool:
+    """Solve UFCStats' lightweight JavaScript browser check.
+
+    Returns True when a challenge was detected and solved for the current
+    session, so the caller can retry the original request.
+    """
+    if "Checking your browser" not in response.text:
+        return False
+
+    nonce_match = re.search(r'var nonce="([^"]+)"', response.text)
+    difficulty_match = re.search(
+        r"target=new Array\((\d+)\+1\)\.join\('0'\)",
+        response.text,
+    )
+    if nonce_match is None or difficulty_match is None:
+        return False
+
+    nonce = nonce_match.group(1)
+    difficulty = int(difficulty_match.group(1))
+    prefix = "0" * difficulty
+
+    n = 0
+    while not hashlib.sha256(f"{nonce}:{n}".encode()).hexdigest().startswith(prefix):
+        n += 1
+
+    parsed = urlparse(response.url)
+    challenge_url = f"{parsed.scheme}://{parsed.netloc}/__c"
+    challenge_response = session.post(challenge_url, data={"nonce": nonce, "n": n})
+    challenge_response.raise_for_status()
+    return True
 
 
 def links_to_soups(
@@ -130,13 +163,19 @@ def link_to_soup(
     if delay > 0:
         time.sleep(delay)
 
-    if session is None:
+    owns_session = session is None
+    if owns_session:
         session = get_session()
-        soup = bs4.BeautifulSoup(session.get(url).text, "lxml")
-        session.close()
-        return soup
-    else:
-        return bs4.BeautifulSoup(session.get(url).text, "lxml")
+
+    assert session is not None
+    try:
+        response = session.get(url)
+        if _solve_js_browser_check(response, session):
+            response = session.get(url)
+        return bs4.BeautifulSoup(response.text, "lxml")
+    finally:
+        if owns_session:
+            session.close()
 
 
 def worker_constructor(

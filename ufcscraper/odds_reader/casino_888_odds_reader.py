@@ -38,45 +38,95 @@ class Casino888OddsReader(OddsReader):
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
         soup = BeautifulSoup(self.read_html(), "lxml")
+        tables = soup.find_all("div", class_="tournamentEventsList")
 
         rows_to_add = []
 
-        for table in soup.find_all("div", class_="tournamentEventsList"):
-            date_elem = table.find("div", class_="schema-header__container").find("span")
-            datestr = date_elem.text.strip()
+        if tables:
+            for table in tables:
+                date_elem = table.find("div", class_="schema-header__container").find("span")
+                datestr = date_elem.text.strip()
 
-            for language in languages:
-                date = dateparser.parse(
-                    datestr,
-                    languages=[language,],
-                    locales=[language,],
-                    settings = {
-                        "PREFER_DATES_FROM": "future",
-                        "RELATIVE_BASE": self.html_datetime,
-                    }
-                )
-                if date is not None:
-                    break
-            else:
-                raise ValueError(f"Could not parse date from: {datestr}")
+                for language in languages:
+                    date = dateparser.parse(
+                        datestr,
+                        languages=[language,],
+                        locales=[language,],
+                        settings = {
+                            "PREFER_DATES_FROM": "future",
+                            "RELATIVE_BASE": self.html_datetime,
+                        }
+                    )
+                    if date is not None:
+                        break
+                else:
+                    raise ValueError(f"Could not parse date from: {datestr}")
 
-            for fight in table.find_all("div", class_="bet-card"):
-                fighters = []
-                odds = []
-                
-                for fighter in fight.find_all("span", class_="event-name__text"):
-                    fighters.append(fighter.text.strip())
+                for fight in table.find_all("div", class_="bet-card"):
+                    fighters = []
+                    odds = []
+                    
+                    for fighter in fight.find_all("span", class_="event-name__text"):
+                        fighters.append(fighter.text.strip())
 
-                for odd in fight.find_all("div", class_="bet-button-new"):
-                    odds.append(float(odd.text))
+                    for odd in fight.find_all("div", class_="bet-button-new"):
+                        odds.append(float(odd.text))
 
-                rows_to_add.append((
-                    date,
-                    fighters[0],
-                    fighters[1],
-                    odds[0],
-                    odds[1]
-                ))
+                    rows_to_add.append((
+                        date,
+                        fighters[0],
+                        fighters[1],
+                        odds[0],
+                        odds[1]
+                    ))
+        else:
+            for table in soup.find_all("div", class_="sport-event-list"):
+                date_elem = table.find("div", class_="sport-event-list__header__name")
+                if date_elem is None:
+                    continue
+                datestr = date_elem.get_text(strip=True)
+
+                for language in languages:
+                    date = dateparser.parse(
+                        datestr,
+                        languages=[language,],
+                        locales=[language,],
+                        settings = {
+                            "PREFER_DATES_FROM": "future",
+                            "RELATIVE_BASE": self.html_datetime,
+                        }
+                    )
+                    if date is not None:
+                        break
+                else:
+                    raise ValueError(f"Could not parse date from: {datestr}")
+
+                for fight in table.find_all("div", class_="sport-event-list__event"):
+                    fighters = [
+                        fighter.text.strip()
+                        for fighter in fight.find_all("span", class_="event-name__text")
+                    ]
+                    odds = [
+                        float(odd.text.strip())
+                        for odd in fight.find_all("div", class_="bet-button-new")
+                    ]
+
+                    if len(fighters) < 2 or len(odds) < 2:
+                        continue
+
+                    rows_to_add.append((
+                        date,
+                        fighters[0],
+                        fighters[1],
+                        odds[0],
+                        odds[1],
+                    ))
+
+        if not rows_to_add:
+            raise ValueError(
+                "888 HTML does not contain rendered odds cards. "
+                "The page was likely saved before client-side data finished loading."
+            )
         
 
         self.write_odds(rows_to_add)
