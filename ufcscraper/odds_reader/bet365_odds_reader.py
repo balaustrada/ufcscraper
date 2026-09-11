@@ -37,10 +37,20 @@ class Bet365OddsReader(OddsReader):
         Scrapes the odds data from the HTML file and saves it to a CSV file.
         """
         soup = BeautifulSoup(self.read_html(), "lxml")
-        table = soup.find_all("div", class_="gl-MarketGroupContainer")[-1]
+        tables = soup.find_all("div", class_="gl-MarketGroupContainer")
+        if not tables:
+            logger.warning(
+                "Skipping Bet365 HTML without rendered gl-MarketGroupContainer odds data"
+            )
+            return
+        table = tables[-1]
         rows = table.find_all("div", recursive=False)
+        if not rows:
+            logger.warning("Skipping empty Bet365 odds market group")
+            return
 
         fights: Dict[datetime, List[List[str]]] = {}
+        date = None
         for elem in rows[0].find_all("div", recursive=False):
             if not elem.text:
                 continue
@@ -62,7 +72,9 @@ class Bet365OddsReader(OddsReader):
                     if date is not None:
                         break
                 else:
-                    raise ValueError(f"Could not parse date from: {datestr}")
+                    logger.warning("Skipping Bet365 section with unrecognized date: %s", datestr)
+                    date = None
+                    continue
 
                 fights[date] = []
 
@@ -73,8 +85,9 @@ class Bet365OddsReader(OddsReader):
                 ):
                     fighters.append(fighter.text.strip())
 
-                if not date:
-                    raise ValueError("No date found for fighters: ", fighters)
+                if date is None or len(fighters) != 2:
+                    logger.warning("Skipping incomplete Bet365 fight section")
+                    continue
                 fights[date].append(fighters)
 
         odds = []
@@ -106,5 +119,7 @@ class Bet365OddsReader(OddsReader):
                 )
                 rows_to_add.append(row)
 
-
+        if not rows_to_add:
+            logger.warning("Skipping Bet365 HTML without complete fight odds")
+            return
         self.write_odds(rows_to_add)

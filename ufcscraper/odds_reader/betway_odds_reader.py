@@ -49,11 +49,17 @@ class BetwayOddsReader(OddsReader):
 
         if sections:
             for section in sections:
-                date = section.find("span", {"data-testid": "table-header-title"})
-                
+                date_element = section.find(
+                    "span", {"data-testid": "table-header-title"}
+                )
+                if date_element is None:
+                    logger.warning("Skipping Betway section without an event date")
+                    continue
+
+                date = None
                 for language in languages:
                     date = dateparser.parse(
-                        date.text,
+                        date_element.text,
                         languages=[language,],
                         locales=[language,],
                         settings = {
@@ -64,18 +70,57 @@ class BetwayOddsReader(OddsReader):
                     if date is not None:
                         break
                 else:
-                    raise ValueError(f"Could not parse date from: {date.text}")
+                    logger.warning(
+                        "Skipping Betway section with unrecognized date: %s",
+                        date_element.text.strip(),
+                    )
+                    continue
 
                 for fight_section in section.find_all("div", {"data-testid": "table-section"}):
                     fight_records = fight_section.find_all("span")
+                    odds_elements = fight_section.find_all(
+                        "span", {"data-testid": "outcome-price-value"}
+                    )
 
-                    rows_to_add.append((
-                        date,
-                        fight_records[0].text.strip(),
-                        fight_records[3].text.strip(),
-                        float(fight_records[5].text.strip().replace(',', '.')),
-                        float(fight_records[7].text.strip().replace(',', '.')),   
-                    ))
+                    if len(odds_elements) >= 2:
+                        first_odd = fight_records.index(odds_elements[0])
+                        fighters = fight_records[:first_odd]
+                        if len(fighters) < 2:
+                            logger.warning("Skipping incomplete Betway fight section")
+                            continue
+                        fighter_name = fighters[0].text.strip()
+                        opponent_name = fighters[1].text.strip()
+                        odds_text = [
+                            odds_elements[0].text.strip(),
+                            odds_elements[1].text.strip(),
+                        ]
+                    elif len(fight_records) >= 8:
+                        fighter_name = fight_records[0].text.strip()
+                        opponent_name = fight_records[3].text.strip()
+                        odds_text = [
+                            fight_records[5].text.strip(),
+                            fight_records[7].text.strip(),
+                        ]
+                    else:
+                        logger.warning("Skipping incomplete Betway fight section")
+                        continue
+
+                    try:
+                        fighter_odds = float(odds_text[0].replace(",", "."))
+                        opponent_odds = float(odds_text[1].replace(",", "."))
+                    except ValueError:
+                        logger.warning("Skipping Betway fight section without decimal odds")
+                        continue
+
+                    rows_to_add.append(
+                        (
+                            date,
+                            fighter_name,
+                            opponent_name,
+                            fighter_odds,
+                            opponent_odds,
+                        )
+                    )
         else:
             payload = self._extract_next_payload(html)
             match_emos = self._extract_match_emos(payload)
