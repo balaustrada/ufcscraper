@@ -183,10 +183,12 @@ class BaseOdds(BaseFileHandler, ABC):
                     f"\n\t Best match: {match_name} (score: {score})"
                 )
 
-        with open(self.fighter_names.data_file, "a") as f_names:
-            writer = csv.writer(f_names)
-            for fighter_id, name in zip(fighter_ids, valid_names):
-                writer.writerow([fighter_id, betting_house, name, ""])
+        if valid_names:
+            with open(self.fighter_names.data_file, "a") as f_names:
+                writer = csv.writer(f_names)
+                for fighter_id, name in zip(fighter_ids, valid_names):
+                    writer.writerow([fighter_id, betting_house, name, ""])
+            self.fighter_names.load_data()
 
     def consolidate_odds(
         self, betting_house: str, max_date_diff_days: int = 3, min_match_score: int = 90
@@ -231,12 +233,14 @@ class BaseOdds(BaseFileHandler, ABC):
                 "name": "fighter_name",
             }),
             on="fighter_name",
+            validate="many_to_one",
         ).merge(
             fighter_names.rename(columns={
                 "name": "opponent_name", 
                 "fighter_id": "opponent_id",
             }),
             on="opponent_name",
+            validate="many_to_one",
         )[["html_datetime", "fight_date", "fighter_id", "opponent_id", "fighter_odds", "opponent_odds"]].rename(
             columns={"html_datetime": "scrape_datetime"}
         )

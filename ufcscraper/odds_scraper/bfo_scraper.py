@@ -69,6 +69,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
     n_sessions = 1  # New default value
     min_score = 90
     max_exception_retries = 3
+    max_captcha_wait_seconds = 120
     wait_time = 20
     web_url = "https://www.bestfightodds.com"
     upcoming: bool
@@ -159,42 +160,55 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
             result_queue: multiprocessing.Queue,
             driver: webdriver.Chrome,
         ) -> None:
-            while True:
-                try:
+            try:
+                while True:
                     task = task_queue.get()
                     if task is None:
                         break
 
-                    args, id_ = task
-                    result = None
+                    try:
+                        args, id_ = task
+                        for attempt in range(cls.max_exception_retries + 1):
+                            try:
+                                result = method(*args, driver)
+                                break
+                            except Exception as e:
+                                logging.error(
+                                    f"Attempt {attempt + 1} failed for task {task}: {e}"
+                                )
+                                logging.exception("Exception occurred")
 
-                    for attempt in range(cls.max_exception_retries + 1):
-                        try:
-                            result = method(*args, driver)
-                            result_queue.put((result, id_))
-                            break
-                        except Exception as e:
-                            logging.error(
-                                f"Attempt {attempt + 1} failed for task {task}: {e}"
-                            )
-                            logging.exception("Exception occurred")
+                                if attempt < cls.max_exception_retries:
+                                    try:
+                                        driver.quit()
+                                        driver = webdriver.Chrome()
+                                    except Exception:
+                                        logging.exception("Unable to reset Chrome driver")
+                        else:
+                            result = None
 
-                            # Reset the driver after a failed attempt
-                            driver.quit()
-                            driver = webdriver.Chrome()
-
-                except Exception as e:
-                    logging.error(f"Error processing task {task}: {e}")
-                    logging.exception("Exception ocurred")
-
-                    # Reset the driver after a failed attempt
+                        # Every task must notify the coordinator, including failures.
+                        result_queue.put((result, id_))
+                    except Exception:
+                        logging.exception(f"Error processing task {task}")
+                        result_queue.put((None, task[1]))
+            finally:
+                try:
                     driver.quit()
-                    driver = webdriver.Chrome()
-
-                    # Send None to the result because task failed
-                    result_queue.put(None)
+                except Exception:
+                    logging.exception("Unable to close Chrome driver")
 
         return worker
+
+    @classmethod
+    def wait_for_captcha(cls, driver: webdriver.Chrome) -> None:
+        """Wait briefly for a CAPTCHA to clear instead of blocking indefinitely."""
+        deadline = time.monotonic() + cls.max_captcha_wait_seconds
+        while cls.captcha_indicator(driver):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("BestFightOdds CAPTCHA did not clear in time")
+            logging.warning("Human recognition page detected, waiting...")
+            time.sleep(5)
 
     def get_odds_from_profile_urls(
         self,
@@ -247,6 +261,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
 
         new_ids = []
         for search_name in fighter_search_names:
+            time.sleep(self.delay)
             profile = self.search_fighter_profile(search_name, driver)
             if profile is not None:
                 new_ids.append(self.id_from_url(profile[1]))
@@ -254,6 +269,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         # We may have multiple ids for the fighter, we should
         # try all of them
         for fighter_BFO_id in fighter_BFO_ids + new_ids:
+            time.sleep(self.delay)
             driver.get(self.url_from_id(fighter_BFO_id))
             (
                 id_BFO_name,
@@ -369,9 +385,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         ]  # type: ignore[index]
 
         if element.get_attribute("id") == "hfmr8":  # pragma: no cover
-            while BestFightOddsScraper.captcha_indicator(driver):
-                logging.warning("Human recognition page detected, stalling...")
-                time.sleep(5)
+            cls.wait_for_captcha(driver)
 
         # Extract table
         soup = BeautifulSoup(
@@ -383,8 +397,6 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
 
         rows_f = rows[2::3]
         rows_s = rows[3::3]
-
-        assert len(rows_f) == len(rows_s)
 
         dates = []
         opponents_name: List[str] = []
@@ -411,19 +423,23 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
             fighter_name = rows_f[0].select_one("a").get_text(strip=True)
 
         for row_f, row_s in zip(rows_f, rows_s):
-            date_string = row_s.find(class_="item-non-mobile").text
-            if date_string == "":
-                continue
-            else:
-                date = parse_date(date_string)
-
+            date_element = row_s.find(class_="item-non-mobile")
             opponent = row_s.select_one("a")
+            if date_element is None or opponent is None or not opponent.get("href"):
+                continue
+            date_string = date_element.get_text(strip=True)
+            if date_string in {"Future Events", "Past Events"}:
+                continue
+            date = parse_date(date_string)
+            if date is None:
+                continue
 
             moneyline_elements = row_f.find_all("td", class_="moneyline")
             moneyline_values = [
                 elem.get_text(strip=True) for elem in moneyline_elements
             ]
-
+            if len(moneyline_values) < 3:
+                continue
             if moneyline_values[0] == "":
                 openings.append("")
                 closing_range_min.append("")
@@ -484,11 +500,10 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         """
         url = self.create_search_url(search_fighter)
 
+        time.sleep(self.delay)
         driver.get(url)
 
-        while self.captcha_indicator(driver):
-            logging.warning("Human recognition page detected, stalling..")
-            time.sleep(5)
+        self.wait_for_captcha(driver)
 
         # Three possible outputs
         element = WebDriverWait(driver, self.wait_time).until(
@@ -503,9 +518,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
         ]  # type: ignore[index]
 
         if element.get_attribute("id") == "hfmr8":  # pragma: no cover
-            while self.captcha_indicator(driver):
-                logging.warning("Human recognition page detected, stalling..")
-                time.sleep(5)
+            self.wait_for_captcha(driver)
 
         if element.get_attribute("class") == "team-stats-table":
             fighter = driver.find_element(By.ID, "team-name").text
@@ -528,6 +541,9 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
                     fighters_names.append(link_element.text)
                     fighters_urls.append(link_element["href"])
 
+            if not fighters_names:
+                logger.info(f"Couldn't find profile for {search_fighter}")
+                return None
             best_name, score = process.extractOne(
                 search_fighter, fighters_names, scorer=fuzz.token_sort_ratio
             )
@@ -784,7 +800,7 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
                         possible_opponents,
                         scorer=fuzz.token_sort_ratio,
                     )
-                    for opponent in possible_opponents
+                    for opponent in row["opponent_UFC_names"]
                 ]
 
                 best_name, score = max(scores, key=lambda x: x[1])
@@ -899,53 +915,50 @@ class BaseBestFightOddsScraper(BaseScraper, ABC):
             search_names,
             bfo_ids,
         )
-        with (
-            open(self.data_file, "a") as f_odds,
-            open(self.fighter_names.data_file, "a") as f_names,
-        ):
-            writer_odds = csv.writer(f_odds)
-            writer_names = csv.writer(f_names)
+        try:
+            with (
+                open(self.data_file, "a") as f_odds,
+                open(self.fighter_names.data_file, "a") as f_names,
+            ):
+                writer_odds = csv.writer(f_odds)
+                writer_names = csv.writer(f_names)
 
-            while fighters_scraped < fighters_to_scrape:
-                result, fighter_id = result_queue.get()
-                fighters_scraped += 1
+                while fighters_scraped < fighters_to_scrape:
+                    result, fighter_id = result_queue.get()
+                    fighters_scraped += 1
 
-                if result is not None:
-                    odds_records, BFO_names = self.extract_valid_fights_from_odds_data(
-                        grouped_data.get_group(fighter_id),
-                        result,
-                    )
+                    if result is not None:
+                        odds_records, BFO_names = self.extract_valid_fights_from_odds_data(
+                            grouped_data.get_group(fighter_id),
+                            result,
+                        )
 
-                    # Write records
-                    [writer_odds.writerow(record) for record in odds_records]
-                    records_added += len(odds_records)
+                        for record in odds_records:
+                            writer_odds.writerow(record)
+                        records_added += len(odds_records)
 
-                    logger.info(
-                        f"{fighters_scraped} out of {fighters_to_scrape} fighters."
-                        f"\n\t{records_added} out of {records_to_add} records added."
-                    )
+                        logger.info(
+                            f"{fighters_scraped} out of {fighters_to_scrape} fighters."
+                            f"\n\t{records_added} out of {records_to_add} records added."
+                        )
 
-                    # Check if the valid names are already in the names table
-                    # and if not, add them
-                    for id_, bfo_id, name in BFO_names:
-                        if not self.fighter_names.fighter_in_database(
-                            id_,
-                            "BestFightOdds",
-                            name,
-                            bfo_id,
-                        ):
-                            writer_names.writerow([id_, "BestFightOdds", name, bfo_id])
-
-                else:
-                    logger.info(
-                        f"{fighters_scraped} out of {fighters_to_scrape} fighters - Error"
-                    )
-
-        for _ in range(self.n_sessions):
-            task_queue.put(None)
-
-        for worker in workers:
-            worker.join()
+                        for id_, bfo_id, name in BFO_names:
+                            if not self.fighter_names.fighter_in_database(
+                                id_,
+                                "BestFightOdds",
+                                name,
+                                bfo_id,
+                            ):
+                                writer_names.writerow([id_, "BestFightOdds", name, bfo_id])
+                    else:
+                        logger.info(
+                            f"{fighters_scraped} out of {fighters_to_scrape} fighters - Error"
+                        )
+        finally:
+            for _ in workers:
+                task_queue.put(None)
+            for worker in workers:
+                worker.join()
 
         logger.info("Finished scraping BFO odds.")
         logger.info("Scraped {} records".format(records_added))

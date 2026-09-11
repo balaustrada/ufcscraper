@@ -60,6 +60,9 @@ class FighterNames(BaseFileHandler):
             "fighter_id"
         ].tolist()
 
+        ufc_stats_data = ufc_stats_data[["fighter_id", "fighter_name"]].drop_duplicates(
+            subset="fighter_id"
+        )
         missing_records = ufc_stats_data[
             ~ufc_stats_data["fighter_id"].isin(existing_records)
         ]
@@ -69,9 +72,7 @@ class FighterNames(BaseFileHandler):
 
             with open(self.data_file, "a+") as f:
                 writer = csv.writer(f)
-                for fighter_id, name in ufc_stats_data[
-                    ["fighter_id", "fighter_name"]
-                ].values:
+                for fighter_id, name in missing_records.values:
                     writer.writerow([fighter_id, "UFCStats", name, fighter_id])
 
             print()
