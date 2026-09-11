@@ -11,14 +11,19 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from bs4 import BeautifulSoup
 import pandas as pd
 from fuzzywuzzy import fuzz
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 
 from ufcscraper.base import BaseScraper
 from ufcscraper.event_scraper import EventScraper
 from ufcscraper.fight_scraper import FightScraper
 from ufcscraper.fighter_scraper import FighterScraper
-from ufcscraper.utils import link_to_soup
 
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Dict, Optional
@@ -48,9 +53,39 @@ class ReplacementScraper(BaseScraper):  # pragma: no cover
     def scrape_replacements(self) -> None:
         """Scrapes replacement details from BetMMA and saves data into a CSV file."""
         logger.info("Scraping replacements...")
+
+        soup = None
+        for headless in (True, False):
+            options = Options()
+            if headless:
+                options.add_argument("--headless=new")
+
+            driver = webdriver.Chrome(options=options)
+            try:
+                driver.get(self.web_url)
+                WebDriverWait(driver, 30).until(
+                    lambda d: d.find_elements(By.CSS_SELECTOR, 'td[bgcolor="#F7F7F7"]')
+                    or d.title != "Just a moment..."
+                )
+                if driver.find_elements(By.CSS_SELECTOR, 'td[bgcolor="#F7F7F7"]'):
+                    soup = BeautifulSoup(driver.page_source, "lxml")
+                    break
+            except TimeoutException:
+                if headless:
+                    logger.info("BetMMA blocked headless Chrome; retrying with visible browser...")
+                else:
+                    raise
+            finally:
+                driver.quit()
+
+        if soup is None:
+            raise ValueError("Unable to load replacement stats page from BetMMA.tips")
+
         # Generate soup, then navigate to select the correct table
-        soup = link_to_soup(self.web_url)
-        table = soup.find_all("td", bgcolor="#F7F7F7")[1].find("table")
+        cells = soup.find_all("td", bgcolor="#F7F7F7")
+        if len(cells) < 2 or cells[1].find("table") is None:
+            raise ValueError("Unable to find replacement stats table on BetMMA.tips")
+        table = cells[1].find("table")
 
         # Retrieve data from the table
         table_data = []

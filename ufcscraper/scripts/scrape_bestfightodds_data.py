@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-from ufcscraper.odds_scraper import BestFightOddsScraper
+from ufcscraper.odds_scraper import BestFightOddsScraper, UpcomingBestFightOddsScraper
 
 
 def get_args() -> argparse.Namespace:
@@ -70,6 +70,10 @@ def get_args() -> argparse.Namespace:
 
     parser.add_argument("--min-date", type=str, default="2007-08-01")
 
+    parser.add_argument(
+        "--upcoming", action="store_true", help="Scrape upcoming fights."
+    )
+
     return parser.parse_args()
 
 
@@ -94,7 +98,11 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     )
 
     min_date = datetime.datetime.strptime(args.min_date, "%Y-%m-%d").date()
-    scraper = BestFightOddsScraper(
+
+    scraper_class = (
+        UpcomingBestFightOddsScraper if args.upcoming else BestFightOddsScraper
+    )
+    scraper = scraper_class(
         data_folder=args.data_folder,
         n_sessions=args.n_sessions,
         delay=args.delay,

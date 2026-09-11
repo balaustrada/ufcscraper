@@ -15,6 +15,7 @@ Arguments:
 - **log-level**: Set the logging level (e.g., INFO, DEBUG).
 - **data-folder**: Specify the folder where scraped data is stored.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -33,12 +34,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 def get_args() -> argparse.Namespace:
     """
     Parse command-line arguments and return them as an `argparse.Namespace` object.
 
     This function sets up the command-line argument parser and defines the arguments
-    that can be passed to the script. It returns the parsed arguments as an 
+    that can be passed to the script. It returns the parsed arguments as an
     `argparse.Namespace` object.
 
     Returns:
@@ -89,15 +91,17 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         n_sessions=-1,
     )
 
-    # Concat scraper.fight_scraper.data with itself, selecting fighter id first 
+    # Concat scraper.fight_scraper.data with itself, selecting fighter id first
     # fighter_1 and then fighter_2.
     fight_data = scraper.fight_scraper.data.copy()
     fight_data = pd.concat(
         [
             fight_data[["fight_id", "fighter_1", "event_id"]].rename(
-                columns={"fighter_1": "fighter_id"}),
+                columns={"fighter_1": "fighter_id"}
+            ),
             fight_data[["fight_id", "fighter_2", "event_id"]].rename(
-                columns={"fighter_2": "fighter_id"}),
+                columns={"fighter_2": "fighter_id"}
+            ),
         ],
         ignore_index=True,
     )
@@ -115,33 +119,46 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
 
     # Only report fights with missing odds after the first fight with odds.
     msk_missing_odds = (
-        fight_data["opening"].isna() |
-        fight_data["closing_range_min"].isna() |
-        fight_data["closing_range_max"].isna()
+        fight_data["opening"].isna()
+        | fight_data["closing_range_min"].isna()
+        | fight_data["closing_range_max"].isna()
     )
 
     first_odds_date = fight_data[~msk_missing_odds]["event_date"].min()
-    msk_missing_odds_after = msk_missing_odds & (fight_data["event_date"] >= first_odds_date)
-    
+    msk_missing_odds_after = msk_missing_odds & (
+        fight_data["event_date"] >= first_odds_date
+    )
+
     # Report the values fulfilling the condition.
     missing_odds = fight_data[msk_missing_odds_after].copy()
 
+    fighter_names = scraper.fighter_scraper.data
+    fighter_names["fighter_name"] = (
+        fighter_names["fighter_f_name"]
+        + " "
+        + fighter_names["fighter_l_name"].fillna("")
+    )
+    fighter_names = fighter_names[["fighter_id", "fighter_name"]]
+    missing_odds = missing_odds.merge(
+        fighter_names,
+        on="fighter_id",
+        how="left",
+    )
+
     if len(missing_odds) > 0:
-        logger.warning(
-            "Found %d fights with missing odds after the first fight with odds (%s). "
-            "Please check the following records:",
-            len(missing_odds),
-            first_odds_date,
+        print(
+            f"Found {len(missing_odds)} fights with missing odds after the first fight with odds ({first_odds_date}). "
+            "Please check the following records:"
         )
         for _, row in missing_odds.iterrows():
-            logger.warning(
-                "Fight ID: %s, Event ID: %s, Event Date: %s, Fighter ID: %s",
-                row["fight_id"],
-                row["event_id"],
-                row["event_date"],
-                row["fighter_id"],
+            print(
+                f"Fight ID:\t{row['fight_id']}\nEvent ID:\t{row['event_id']}"
+                f"\nEvent Date:\t{row['event_date']}\nFighter ID:\t{row['fighter_id']}"
+                f"\nFighter Name:\t{row['fighter_name']}\n"
             )
 
+        for _, row in missing_odds.iterrows():
+            print(f"{row["fight_id"]},{row["fighter_id"]},{row["fighter_name"]}")
 
     # Checking missing catch weights
     valid_weights = [
@@ -195,7 +212,6 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
             )
 
 
-
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     args = get_args()
     main(args)

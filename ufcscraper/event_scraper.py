@@ -163,8 +163,21 @@ class EventScraper(BaseScraper):
         return list(fight_urls)
 
 class UpcomingEventScraper(EventScraper):
-    filename = "upcoming_event_data.csv"
+    filename = "upcoming/event_data.csv"
     event_type = "upcoming"
+
+    def scrape_events(self) -> None:
+        # Remove file if it exists
+        if self.data_file.exists():
+            self.data_file.unlink()
+
+        # Generate empty file with correct dtypes
+        self.check_data_file()
+        self.load_data()
+
+        # Scrape events from UFCStats
+        super().scrape_events()
+
 
     def get_fight_urls_from_event_urls(self, event_urls: List[str]) -> List[str]:
         fight_urls = set()

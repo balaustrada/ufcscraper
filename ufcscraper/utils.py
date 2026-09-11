@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-import logging
+
 import multiprocessing
+import hashlib
 import re
 import time
-from typing import TYPE_CHECKING
+from collections import Counter
+from datetime import date
+from typing import TYPE_CHECKING, Optional
+from urllib.parse import urlparse
+import pandas as pd
+from loguru import logger
 
 import bs4
 import requests
@@ -13,14 +19,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
 if TYPE_CHECKING:
-    import datetime
-    from typing import Callable, Generator, List, Optional, Tuple, TypeVar, Any
+    from typing import Any, Callable, Generator, List, Optional, Tuple, TypeVar
+
     from selenium import webdriver
     from selenium.webdriver.remote.webelement import WebElement
 
     T = TypeVar("T")
 
-logger = logging.getLogger(__name__)
 
 
 def get_session() -> requests.Session:
@@ -43,6 +48,38 @@ def get_session() -> requests.Session:
     session.mount("https://", adapter)
 
     return session
+
+
+def _solve_js_browser_check(response: requests.Response, session: requests.Session) -> bool:
+    """Solve UFCStats' lightweight JavaScript browser check.
+
+    Returns True when a challenge was detected and solved for the current
+    session, so the caller can retry the original request.
+    """
+    if "Checking your browser" not in response.text:
+        return False
+
+    nonce_match = re.search(r'var nonce="([^"]+)"', response.text)
+    difficulty_match = re.search(
+        r"target=new Array\((\d+)\+1\)\.join\('0'\)",
+        response.text,
+    )
+    if nonce_match is None or difficulty_match is None:
+        return False
+
+    nonce = nonce_match.group(1)
+    difficulty = int(difficulty_match.group(1))
+    prefix = "0" * difficulty
+
+    n = 0
+    while not hashlib.sha256(f"{nonce}:{n}".encode()).hexdigest().startswith(prefix):
+        n += 1
+
+    parsed = urlparse(response.url)
+    challenge_url = f"{parsed.scheme}://{parsed.netloc}/__c"
+    challenge_response = session.post(challenge_url, data={"nonce": nonce, "n": n})
+    challenge_response.raise_for_status()
+    return True
 
 
 def links_to_soups(
@@ -126,13 +163,19 @@ def link_to_soup(
     if delay > 0:
         time.sleep(delay)
 
-    if session is None:
+    owns_session = session is None
+    if owns_session:
         session = get_session()
-        soup = bs4.BeautifulSoup(session.get(url).text, "lxml")
-        session.close()
-        return soup
-    else:
-        return bs4.BeautifulSoup(session.get(url).text, "lxml")
+
+    assert session is not None
+    try:
+        response = session.get(url)
+        if _solve_js_browser_check(response, session):
+            response = session.get(url)
+        return bs4.BeautifulSoup(response.text, "lxml")
+    finally:
+        if owns_session:
+            session.close()
 
 
 def worker_constructor(
@@ -241,14 +284,14 @@ def clean_date_string(date_str: str) -> str:
     return date_str
 
 
-def parse_date(date_str: str) -> Optional[datetime.date]:
-    """Parse a date string into a `datetime.date` object.
+def parse_date(date_str: str) -> Optional[date]:
+    """Parse a date string into a `date` object.
 
     Args:
         date_str (str): The date string to be parsed.
 
     Returns:
-        Optional[datetime.date]: The parsed date object if successful,
+        Optional[date]: The parsed date object if successful,
             otherwise None.
     """
     # Clean the date string
@@ -261,3 +304,48 @@ def parse_date(date_str: str) -> Optional[datetime.date]:
     except ValueError as e:
         print(f"Error parsing date: {e}")
         return None
+
+
+def extract_most_common_domain(soup: bs4.BeautifulSoup) -> str:
+    """
+    Extract the most common domain from all links in a BeautifulSoup object.
+    """
+    links = soup.find_all(href=True)
+    domains = []
+
+    for link in links:
+        href = link["href"]
+        parsed = urlparse(href)
+        if parsed.scheme in ("http", "https") and parsed.netloc:
+            domains.append(parsed.netloc)
+
+    if not domains:
+        raise ValueError("No valid links found in the provided BeautifulSoup object.")
+
+    # Return the most common domain
+    return Counter(domains).most_common(1)[0][0]
+
+
+def sort_fighter_opponent_columns(
+    df: pd.DataFrame, fighter_column: str, opponent_column: str
+) -> pd.DataFrame:
+    """
+    Sort the fighter and opponent columns in a DataFrame to keep consistency when
+    comparing two tables, where one might not be properly sorted.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the fighter and opponent columns.
+        fighter_column (str): The name of the column containing fighter names.
+        opponent_column (str): The name of the column containing opponent names.
+
+    Returns:
+        pd.DataFrame: The DataFrame with sorted fighter and opponent columns.
+    """
+    df = df.copy()
+    df[[fighter_column, opponent_column]] = pd.DataFrame(
+        df.apply(
+            lambda row: sorted([row[fighter_column], row[opponent_column]]), axis=1
+        ).tolist(),
+        index=df.index,
+    )
+    return df

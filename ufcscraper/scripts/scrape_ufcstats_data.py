@@ -62,7 +62,6 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
         n_sessions=args.n_sessions,
         delay=args.delay,
     )
-
     logger.info("")
     logger.info("Scraping fighters...")
     scraper.fighter_scraper.scrape_fighters()
@@ -75,13 +74,14 @@ def main(args: Optional[argparse.Namespace] = None) -> None:
     logger.info(f"Scraping fights...")
     scraper.fight_scraper.scrape_fights()
 
-    logger.info("")
-    logger.info(f"Scraping upcoming events...")
-    scraper.upcoming_event_scraper.scrape_events()
+    if args.upcoming:
+        logger.info("")
+        logger.info(f"Scraping upcoming events...")
+        scraper.upcoming_event_scraper.scrape_events()
 
-    logger.info("")
-    logger.info(f"Scraping upcoming fights...")
-    scraper.upcoming_fight_scraper.scrape_fights()
+        logger.info("")
+        logger.info(f"Scraping upcoming fights...")
+        scraper.upcoming_fight_scraper.scrape_fights()
 
     if args.scrape_replacements:
         logger.info("")
@@ -123,6 +123,12 @@ def get_args() -> argparse.Namespace:
         "--scrape-replacements",
         action="store_true",
         help="Scrape replacements from BetMMA.tips.",
+    )
+
+    parser.add_argument(
+        "--upcoming",
+        action="store_true",
+        help="Also scrape upcoming events and fights.",
     )
 
     return parser.parse_args()
